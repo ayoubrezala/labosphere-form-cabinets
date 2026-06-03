@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mise à jour cabinet — Labosphère 3.0</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f5f6fa;
+  color: #2c3e50;
+  line-height: 1.5;
+  padding: 20px;
+}
+.container { max-width: 800px; margin: 0 auto; }
+.header {
+  background: linear-gradient(135deg, #c8102e 0%, #e63946 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 12px 12px 0 0;
+  text-align: center;
+}
+.header h1 { font-size: 24px; margin-bottom: 8px; }
+.header p { opacity: 0.9; font-size: 14px; }
+.card {
+  background: white;
+  border-radius: 0 0 12px 12px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+.field { margin-bottom: 20px; }
+.field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #2c3e50;
+  font-size: 14px;
+}
+.field label .req { color: #c8102e; }
+.field input[type=text], .field input[type=number], .field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e0e4e9;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus {
+  outline: none;
+  border-color: #c8102e;
+}
+.field .original {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 4px;
+  font-style: italic;
+}
+.field .original.modified { color: #e67e22; }
+.field.error input, .field.error .ms-control {
+  border-color: #c8102e !important;
+  background: #fff5f5;
+}
+.field .err-msg {
+  color: #c8102e;
+  font-size: 12px;
+  margin-top: 4px;
+  display: none;
+}
+.field.error .err-msg { display: block; }
+
+/* Cabinet search */
+.cabinet-search-wrap { position: relative; }
+.cabinet-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e0e4e9;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+.cabinet-suggestions.show { display: block; }
+.cabinet-suggestions .suggestion {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f2f5;
+  font-size: 14px;
+}
+.cabinet-suggestions .suggestion:hover, .cabinet-suggestions .suggestion.active {
+  background: #f8f9fa;
+}
+.cabinet-suggestions .suggestion .label-tag {
+  display: inline-block;
+  background: #c8102e;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+.cabinet-suggestions .did-you-mean {
+  padding: 10px 12px;
+  background: #fff3cd;
+  font-size: 13px;
+  color: #856404;
+}
+.cabinet-suggestions .new-cabinet {
+  padding: 10px 12px;
+  background: #d1ecf1;
+  font-size: 13px;
+  cursor: pointer;
+  color: #0c5460;
+  font-weight: 600;
+}
+
+/* Multi-select */
+.ms-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e0e4e9;
+  border-radius: 6px;
+  cursor: pointer;
+  background: white;
+  font-size: 14px;
+  min-height: 42px;
+  position: relative;
+}
+.ms-control:after {
+  content: "▼";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #6c757d;
+}
+.ms-tags { display: flex; flex-wrap: wrap; gap: 4px; padding-right: 24px; }
+.ms-tag {
+  background: #c8102e;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+.ms-tag.none-tag { background: #6c757d; }
+.ms-placeholder { color: #9aa5b1; }
+.ms-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e0e4e9;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 50;
+  display: none;
+}
+.ms-dropdown.show { display: block; }
+.ms-search {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid #e0e4e9;
+  font-size: 13px;
+  position: sticky;
+  top: 0;
+  background: white;
+}
+.ms-search:focus { outline: none; }
+.ms-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f5f6f8;
+}
+.ms-option:hover { background: #f8f9fa; }
+.ms-option input[type=checkbox] {
+  margin: 0;
+  cursor: pointer;
+}
+.ms-option.none-option {
+  background: #fff3cd;
+  color: #856404;
+  font-weight: 600;
+  border-bottom: 2px solid #ffeaa7;
+}
+.ms-option.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.ms-wrap { position: relative; }
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: #c8102e;
+  color: white;
+}
+.btn-primary:hover { background: #a30d27; }
+.btn-primary:disabled {
+  background: #b8c5d3;
+  cursor: not-allowed;
+}
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+.btn-success { background: #28a745; color: white; }
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 30px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f2f5;
+  color: #c8102e;
+}
+.section-title:first-of-type { margin-top: 0; }
+
+#form-section { display: none; }
+.cabinet-info {
+  background: #e8f4ff;
+  border-left: 4px solid #c8102e;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+.cabinet-info strong { color: #c8102e; }
+.cabinet-info .change-link {
+  float: right;
+  color: #c8102e;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 13px;
+}
+
+.submit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 2px solid #f0f2f5;
+}
+.submit-info { font-size: 13px; color: #6c757d; flex: 1; margin-right: 16px; }
+
+#success-msg {
+  display: none;
+  background: #d4edda;
+  border: 2px solid #28a745;
+  padding: 24px;
+  border-radius: 8px;
+  margin-top: 20px;
+  text-align: center;
+}
+#success-msg h3 { color: #155724; margin-bottom: 8px; }
+#success-msg p { color: #155724; font-size: 14px; }
+
+.admin-toolbar {
+  background: #2c3e50;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  display: none;
+}
+.admin-toolbar.show { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.admin-toolbar button {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.admin-toolbar button:hover { background: rgba(255,255,255,0.3); }
+.admin-toolbar input {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  .card { padding: 20px; }
+  .header { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Mise à jour informations cabinet</h1>
+    <p>Labosphère 3.0 — Confirmez ou modifiez les données de votre cabinet</p>
+  </div>
+  
+  <div class="admin-toolbar" id="admin-toolbar">
+    <span><strong>Mode admin actif</strong> · Modifiez les libellés et options ci-dessous</span>
+    <button onclick="exportSchema()">Exporter schéma</button>
+    <button onclick="importSchema()">Importer schéma</button>
+    <button onclick="resetSchema()">Réinitialiser</button>
+  </div>
+  
+  <div class="card">
+    <!-- Step 1: Cabinet search -->
+    <div id="cabinet-section">
+      <div class="field">
+        <label>Nom de votre cabinet <span class="req">*</span></label>
+        <div class="cabinet-search-wrap">
+          <input type="text" id="cabinet-input" placeholder="Tapez le nom de votre cabinet (ex. copil...)" autocomplete="off">
+          <div class="cabinet-suggestions" id="cabinet-suggestions"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Step 2: Form fields (rendered dynamically) -->
+    <div id="form-section">
+      <div class="cabinet-info" id="cabinet-info">
+        <span>Cabinet sélectionné : <strong id="selected-cabinet"></strong></span>
+        <span class="change-link" onclick="changeCabinet()">Changer</span>
+      </div>
+      
+      <form id="main-form"></form>
+      
+      <div class="submit-row">
+        <div class="submit-info">
+          ⚠️ Tous les champs sont obligatoires. Si vous ne faites pas X, cochez l'option "Pas de X".
+        </div>
+        <button class="btn btn-primary" id="btn-submit" onclick="submitForm()">Valider & télécharger CSV</button>
+      </div>
+    </div>
+    
+    <div id="success-msg">
+      <h3>✓ Réponse enregistrée</h3>
+      <p>Le fichier CSV a été téléchargé. Merci de l'envoyer à l'administrateur Labosphère par mail.</p>
+      <button class="btn btn-secondary" onclick="resetForm()" style="margin-top: 16px;">Faire une autre saisie</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const __EMBED__ = {"cabinets":[{"Id":1,"Title":"A2C EXPERTISE","OFFRE":"3 AMBITION","Adresse":"4 rue Raymond Dendeville 76 500 ELBEUF-SUR-SEINE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Franck Villalard - Laura De Faveri","Pr_x00e9_nomNomassoci_x00e9_":"Isabelle Villalard - Arnaud Queney - Maxime Lebourgeois - Guillaume Huret ","NBCollabs":55,"NBassoci_x00e9_s":8,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["CEGID","CEGID LOOP","LOOP","MYUNISOFT"],"Outils_x0020_Prod_x0020_Social":["CEGID PGI","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["AXIOCAP","EFL","LEXIS NEXIS","SAAS POLYACTE"],"Outils_x0020_Conseil":["CEGID","EIC","FINTHESIS","MEG","PROGBAT","RCA"],"Certification":["Happy At Work"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","SVP","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Communication","Comptable","Expert-comptable","Invité","Juridique","Numérique","Social"]},{"Id":2,"Title":"ACC LYON","OFFRE":"2 CONNEXION","Adresse":"50 rue de marseille 69007 LYON","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Caroline Garmirian","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":28,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":1,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS","FIDU EXPERT"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","FIDU EXPERT","LEXIS NEXIS","RCA MEG","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["Agiris","KANTA","MEG","MY COMPANY FILES","RCA","SESHA"],"Certification":["Happy At Work"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","LES ECHOS","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Juridique","Social"]},{"Id":3,"Title":"ACQS EXPERTISE CONSEIL","OFFRE":"3 AMBITION","Adresse":"125 avenue saint-vincent de-paul 40100 DAX","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Nathalie Cazeaux-Lauilhe","Pr_x00e9_nomNomassoci_x00e9_":"Mélanie Duboy - Hervé Verdeyrou - Vincent Duval","NBCollabs":34,"NBassoci_x00e9_s":4,"EChorsassoci_x00e9_s":1,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACROCAC","AGIRIS","AUTRES"],"Outils_x0020_Prod_x0020_Social":["ACD PAIE","AGIRIS","CADOR PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["AXIOCAP","EFL","LEXIS NEXIS","RCA MEG","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["Agiris","BNC","EIC","FACTOMOS","FULLL","JEDATAVIZ.COM","MEG","RCA","SESHA","WELYB"],"Certification":["Avis Vérifiés","Happy At Work","Qualiopi","RSE"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Communication","Comptable","Expert-comptable","Juridique","Numérique","Social"]},{"Id":4,"Title":"AD LINK","OFFRE":"1 STARTER","Adresse":"570 Avenue du Club Hippique 13 090 AIX EN PROVENCE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Amélie Serre","Pr_x00e9_nomNomassoci_x00e9_":"Laurence Champereux - Guillaume Debuyck","NBCollabs":45,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","AUTRES","CEGID","PENNYLANE","QUADRA","SAGE"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE"],"Outils_x0020_Conseil":["COAXIS","EIC","ISUITEEXPERT","MEG","PROGBAT","RCA"],"Certification":["Happy At Work"],"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","INFODOC EXPERTS","JAL","LA REVUE FIDUCIAIRE","LES ECHOS","MEDIALEX","SVP","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Audit","Communication","Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":5,"Title":"ADEXIAM","OFFRE":"3 AMBITION","Adresse":" 5 Rue Albert Thomas Immeuble le Forum, 25000 BESANÇON","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Christophe Todeschini","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":12,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","PENNYLANE"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["AXIOCAP","EFL","FIDU EXPERT","JURIACT","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","WORD"],"Outils_x0020_Conseil":["AXONAUT","EIC","FINTHESIS","FYGR","ISUITEEXPERT","KANTA","KWIPER","MEG","RCA","SESHA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Juridique","RH"]},{"Id":6,"Title":"ADOUR","OFFRE":"1 STARTER","Adresse":"3 place du Béziau 65 310 LALOUBÈRE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Marc Berasaluce","Pr_x00e9_nomNomassoci_x00e9_":"Sandrine Barozzi","NBCollabs":16,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","ACROCAC"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","RCA MEG","SAAS POLYACTE"],"Outils_x0020_Conseil":["EIC","ISUITEEXPERT","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN","JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable","Juridique","Social"]},{"Id":7,"Title":"AGDE","OFFRE":"1 STARTER","Adresse":"1 Impasse de Compère 47 520 LE PASSAGE D'AGEN","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Laurence Laffon Bessonnet","Pr_x00e9_nomNomassoci_x00e9_":"Jean-Luc Bessonnet - Bruno Bessonnet","NBCollabs":40,"NBassoci_x00e9_s":4,"EChorsassoci_x00e9_s":3,"NBSites":4,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["CEGID","PENNYLANE","QUADRA","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["QUADRA","QUADRA PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["AXIOCAP","CEGID JURIDIQUE","EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","QUADRATUS JURIDIQUE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["CEGID","MEG","PROGBAT","RCA","SESHA"],"Certification":["Entreprise à mission","Happy At Work","ISO 9001","RSE"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM","YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Communication","Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":8,"Title":"AGICOM","OFFRE":"3 AMBITION","Adresse":"218 rue de la Ronce 76 230 ISNEAUVILLE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Aline Barré","Pr_x00e9_nomNomassoci_x00e9_":"Thierry Onno - Jean-Claude Girault - Cécile Chabbert Leterc","NBCollabs":25,"NBassoci_x00e9_s":4,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","CEGID","CEGID LOOP","COALA SAGE","LOOP","PENNYLANE","QUADRA","REVISAUDIT","SAGE"],"Outils_x0020_Prod_x0020_Social":["QUADRA PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEFEBVRE DALLOZ","RCA MEG","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["CEGID","EIC","ISUITEEXPERT","JEDATAVIZ.COM","MEG","MY COMPANY FILES","PROGBAT","RCA"],"Certification":["Avis Vérifiés","Happy At Work","ISO 9001","RSE"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","JAL","LA REVUE FIDUCIAIRE","LES ECHOS","MEDIALEX","SVP"],"Outil_x0020_bancaire":["JEDECLARE","MOONCARD"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN","JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Audit","Comptable","Expert-comptable","Invité","Juridique","RH","Social"]},{"Id":9,"Title":"ASG","OFFRE":null,"Adresse":"8 rue Amaury de Craon 33 670 CRÉON","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Philippe Coelho","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":22,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","AUTRES","PENNYLANE"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["EIC","ISUITEEXPERT","JEDATAVIZ.COM","KANTA","MEG","RCA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Invité","Juridique","RH","Social"]},{"Id":10,"Title":"AUDEXCOM","OFFRE":"2 CONNEXION","Adresse":"9 rue Robert Schuman 34430 SAINT JEAN DE VÉDAS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Régis Baclet - Julie Alazard","Pr_x00e9_nomNomassoci_x00e9_":"Julie Alazard","NBCollabs":17,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["QUADRA","TIIME"],"Outils_x0020_Prod_x0020_Social":["HIFIVEWORK","QUADRA PAIE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEXIS NEXIS"],"Outils_x0020_Conseil":["EMASPHERE","MEG","RCA"],"Certification":["Happy At Work"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE","LES ECHOS","MEDIALEX","SVP"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable"]},{"Id":11,"Title":"AUDICER","OFFRE":"2 CONNEXION","Adresse":"31 Rue de la Mar À Tissier 91 280 SAINT-PIERRE-DU-PERRAY ","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Julien Gros","Pr_x00e9_nomNomassoci_x00e9_":"Cyrille Hervé - Solenn Thomas - Emmanuel Cuny","NBCollabs":85,"NBassoci_x00e9_s":7,"EChorsassoci_x00e9_s":0,"NBSites":4,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["CEGID JURIDIQUE","EFL","LEXIS NEXIS","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["BNC","EIC","ISUITEEXPERT","KANTA","MEG","MY COMPANY FILES","RCA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","SVP"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK"],"Outil_x0020_de_x0020_signature_x":["YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Juridique","Numérique","Social"]},{"Id":12,"Title":"AXE 3","OFFRE":"3 AMBITION","Adresse":"5 rue de l'Atlas 75 019 PARIS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Mathilde Guignard","Pr_x00e9_nomNomassoci_x00e9_":"Edouard Martel - Guillaume Caron","NBCollabs":27,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS","CEGID","CEGID LOOP","LOOP"],"Outils_x0020_Prod_x0020_Social":["AGIRIS","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","REVUE FIDUCIAIRE"],"Outils_x0020_Conseil":["MY COMPANY FILES"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":13,"Title":"BCA","OFFRE":"1 STARTER","Adresse":"1 Rue Frida Kahlo 79000 NIORT ","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Julien Drochon","Pr_x00e9_nomNomassoci_x00e9_":"Christophe Chaumonot","NBCollabs":24,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":2,"NBSites":3,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","RCA MEG","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["EIC","ISUITEEXPERT","MEG","PROGBAT","RCA","WELYB"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS"],"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Invité","RH","Social"]},{"Id":14,"Title":"BERTON ET ASSOCIÉS","OFFRE":"2 CONNEXION","Adresse":"2 avenue d'Angers 79 300 BRESSUIRE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Tony Rangeard","Pr_x00e9_nomNomassoci_x00e9_":"Nicolas Fardeau - Maxime Rousseau - Béatrice Pairault - Philippe Boutet","NBCollabs":38,"NBassoci_x00e9_s":5,"EChorsassoci_x00e9_s":5,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD"],"Outils_x0020_Prod_x0020_Social":["ACD PAIE","CADOR PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["EIC","ISUITEEXPERT","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Invité","Juridique","Social"]},{"Id":15,"Title":"BFP EXPERTISE CONSEIL","OFFRE":"2 CONNEXION","Adresse":"34 rue Claire Pauilhac 31000 TOULOUSE / 35 rue Lancefoc, 31000 Toulouse (nouvelle adresse)","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Pierre Fournier","Pr_x00e9_nomNomassoci_x00e9_":"Myriam Bouchmal - Farid Bourial - Olivier San José - Mathieu Chieulet","NBCollabs":15,"NBassoci_x00e9_s":5,"EChorsassoci_x00e9_s":3,"NBSites":4,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","CEGID"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["ISUITEEXPERT","MEG","MY COMPANY FILES"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Invité","Social"]},{"Id":16,"Title":"BINÔME","OFFRE":"3 AMBITION","Adresse":"32 Boulevard Robert Thiboust 77 700 SERRIS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Patrick Camus","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":12,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEFEBVRE DALLOZ","LEXIS NEXIS","SAAS POLYACTE"],"Outils_x0020_Conseil":["COAXIS","ISUITEEXPERT","KANTA","MEG","RCA","SESHA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Invité","Social"]},{"Id":17,"Title":"BONNET ET ASSOCIÉS","OFFRE":"3 AMBITION","Adresse":"30 Av. Général Leclerc Bâtiment Apollo, 38200 VIENNE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Véronique Rousset Carrier","Pr_x00e9_nomNomassoci_x00e9_":"Pascal Massei","NBCollabs":90,"NBassoci_x00e9_s":4,"EChorsassoci_x00e9_s":0,"NBSites":7,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","AGIRIS","AUTRES","CEGID","FIDU EXPERT","QUADRA","SAGE"],"Outils_x0020_Prod_x0020_Social":["ACD PAIE","AGIRIS","ISA PAYE","QUADRA","QUADRA PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["AXIOCAP","CONFORMEEXPERT.COM","EFL","FIDU EXPERT","LEFEBVRE DALLOZ","LEXIS NEXIS","QUADRATUS JURIDIQUE","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["AXONAUT","Agiris","BNC","CEGID","COAXIS","EIC","EVOLIZ","FULLL","FYGR","ISUITEEXPERT","KANTA","MEG","PROGBAT","RCA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","LES ECHOS","SVP","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE","QONTO","SOBANK","SYCOMORE","TRANSFERTBANQUE"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN","JESIGNEEXPERT.COM","YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Communication","Comptable","Expert-comptable","Juridique","Numérique","Social"]},{"Id":18,"Title":"COGEDIAC","OFFRE":"2 CONNEXION","Adresse":"4 rue Alfred Kastler 14 000 CAEN","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Claire Fournier - Marie-France Huyghe-Burnog","Pr_x00e9_nomNomassoci_x00e9_":"Marc Levilly ","NBCollabs":19,"NBassoci_x00e9_s":4,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS"],"Outils_x0020_Prod_x0020_Social":["AGIRIS","E. Collab","ISA PAYE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEXIS NEXIS","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["Agiris","FACTOMOS","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Audit","Comptable","Expert-comptable","Invité"]},{"Id":19,"Title":"CO-PILOTES","OFFRE":"3 AMBITION","Adresse":"1768 Avenue des matignon 50400 GRANVILLE ","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Adeline Pottier","Pr_x00e9_nomNomassoci_x00e9_":"Jérôme Fleury - Frédéric Tillard - Marie-Hermine Tillard","NBCollabs":45,"NBassoci_x00e9_s":5,"EChorsassoci_x00e9_s":1,"NBSites":5,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","PENNYLANE","REVISAUDIT","SAGE","TIIME"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["CONFORMEEXPERT.COM","EFL","FIDU EXPERT","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["BNC","CEGID","COAXIS","EIC","HENRRI","ISUITEEXPERT","JEDATAVIZ.COM","KANTA","MEG","MY COMPANY FILES","PROGBAT","RCA","SESHA"],"Certification":["Avis Vérifiés","Happy At Work","Qualiopi"],"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","MEDIALEX","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM","YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Juridique","Numérique","RH","Social"]},{"Id":20,"Title":"FICOGEX","OFFRE":"1 STARTER","Adresse":"5 ter Rue du Dôme 75 116 PARIS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Tiphaine PIZYK - Jean-Guillaume Rague","Pr_x00e9_nomNomassoci_x00e9_":"Richard Debacker - Jean Guillaume Raguet - Xavier Flament","NBCollabs":62,"NBassoci_x00e9_s":4,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS","QUADRA"],"Outils_x0020_Prod_x0020_Social":["AGIRIS","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":["Agiris","EIC","MEG","MY COMPANY FILES"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Invité","Numérique","RH","Social"]},{"Id":21,"Title":"FOLLET BOUTIN","OFFRE":"2 CONNEXION","Adresse":"15 Boulevard des Fontaines 76390 AUMALE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Adrien Dubois","Pr_x00e9_nomNomassoci_x00e9_":"Aurélien Follet - François Boutin - Adrien Dubois","NBCollabs":30,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["SAGE"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["COALA","LEXIS NEXIS"],"Outils_x0020_Conseil":["MEG","MY COMPANY FILES","PROGBAT","RCA"],"Certification":["ISO 9001"],"Outils_x0020_flux_x0020_d_x0027_":["INFODOC EXPERTS","LES ECHOS","MEDIALEX"],"Outil_x0020_bancaire":["JEDECLARE","TRANSFERTBANQUE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable"]},{"Id":22,"Title":"GEXPERTIZ","OFFRE":"1 STARTER","Adresse":"41 avenue de Châtel Guyon 63 200 RIOM","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Gwénaël Perrin","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":15,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":1,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["COALA SAGE","SAGE"],"Outils_x0020_Prod_x0020_Social":["COALA","SAGE PROD SOCIAL"],"Outils_x0020_Prod_x0020_Juridiqu":["COALA","LEXIS NEXIS"],"Outils_x0020_Conseil":["EIC","MEG","PROGBAT","RCA","SESHA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL"],"Outil_x0020_bancaire":["SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Social"]},{"Id":23,"Title":"GUERY BOLLE","OFFRE":"1 STARTER","Adresse":"1 Bis allée des Plantes 95 000 CERGY","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Nicolas Bollé","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":20,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":1,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Numérique"]},{"Id":24,"Title":"HMCC ","OFFRE":"1 BACHELOR","Adresse":"42 Bd de la Bastille 75012 PARIS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Alan Miniou","Pr_x00e9_nomNomassoci_x00e9_":"Oncle Alan","NBCollabs":20,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["MYUNISOFT"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":["EIC","MEG","RCA","WELYB"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable"]},{"Id":25,"Title":"HOCHE","OFFRE":"2 CONNEXION","Adresse":"7 bis rue de Monceau 75 008 PARIS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Florence Pigny ","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":22,"NBassoci_x00e9_s":4,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["Agiris","EIC","MY COMPANY FILES","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE","QONTO","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable"]},{"Id":26,"Title":"INTERACTO ","OFFRE":"2 CONNEXION","Adresse":"12 rue Fleury 76 120 LE GRAND QUEVILLY","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Alexis Renaud - Manuela Cirette","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":13,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","COALA SAGE"],"Outils_x0020_Prod_x0020_Social":["COALA","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE"],"Outils_x0020_Conseil":["KANTA","MEG","MY COMPANY FILES","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM","YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Social"]},{"Id":27,"Title":"KAPSENS","OFFRE":"1 STARTER","Adresse":"395 route de Clisson 44230 SAINT-SÉBASTIEN-SUR-LOIRE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Gilles Namura","Pr_x00e9_nomNomassoci_x00e9_":"Fiorina Battaggia","NBCollabs":15,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AUTRES","MYUNISOFT","PENNYLANE","TIIME"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["CONFORMEEXPERT.COM","EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["AXONAUT","EIC","EVOLIZ","FINTHESIS","FULLL","FYGR","HENRRI","INQOM","JEDATAVIZ.COM","KANTA","MEG","MY COMPANY FILES","PROGBAT","RCA","SELLSY","SESHA","WAIBI","WELYB"],"Certification":["Happy At Work"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","SVP"],"Outil_x0020_bancaire":["JEDECLARE","QONTO","SHINE","SOBANK","SOGESCOT","TRANSFERTBANQUE"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN","JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Social"]},{"Id":28,"Title":"KARA","OFFRE":"2 CONNEXION","Adresse":"9 rue Coste 78000 VERSAILLES / 8-10 Rue de la Bienfaisance, 75008 PARIS/ 1 Rue du Refuge, 78000 Versailles","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Loic Hellegouarch","Pr_x00e9_nomNomassoci_x00e9_":"Patrick Bizien","NBCollabs":23,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":3,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","QUADRA","SAGE"],"Outils_x0020_Prod_x0020_Social":["AGRUME","CADOR PAIE","QUADRA","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["COAXIS","EIC","ISUITEEXPERT","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE","QONTO","SHINE","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":29,"Title":"LARES CONSEIL","OFFRE":"2 CONNEXION","Adresse":"1 bis Avenue de Verdun 94 700 MAISONS-ALFORT","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Christelle Pujo - Marie-Astrid Morin - Marie-Christine Donzet","Pr_x00e9_nomNomassoci_x00e9_":"Marie-Astrid Morin - Fabrice Cangioloni","NBCollabs":35,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":0,"NBSites":3,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","AGIRIS","CEGID","CEGID LOOP","COALA SAGE","FIDU EXPERT","LOOP","QUADRA","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["ACD PAIE","AGIRIS","CADOR PAIE","CEGID PGI","COALA","PAIEGAZ","QUADRA","QUADRA PAIE","SAGE PROD SOCIAL","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["CAC Social","CEGID JURIDIQUE","COALA","EFL","FIDU EXPERT","LEFEBVRE DALLOZ","LEXIS NEXIS","QUADRATUS JURIDIQUE","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["Agiris","BNC","CEGID","EIC","MEG","RCA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Audit","Comptable","Expert-comptable","Juridique","Social"]},{"Id":30,"Title":"LEAD UP","OFFRE":"1 STARTER","Adresse":"25 Rue de Sarre – 57070 METZ","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Sébastien Brécourt","Pr_x00e9_nomNomassoci_x00e9_":"Claire Capra - Stanislas Beck - Matthieu Dalla-Mora","NBCollabs":27,"NBassoci_x00e9_s":5,"EChorsassoci_x00e9_s":0,"NBSites":4,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","AUTRES","PENNYLANE","SAGE"],"Outils_x0020_Prod_x0020_Social":["ACD PAIE","CADOR PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["AXIOCAP","EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["AXONAUT","COAXIS","EMASPHERE","ISUITEEXPERT","JEDATAVIZ.COM","MEG","PROGBAT","RCA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","LA REVUE FIDUCIAIRE","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE","QONTO","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM","YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Invité","Social"]},{"Id":31,"Title":"LINK EXPERTISES","OFFRE":"3+ DOCTOR","Adresse":"68 ter avenue Henri Barbusse 93 290 TREMBLAY-EN-FRANCE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Sylvie Gallou - Julien Cohen-Salmon - Mickaël Ouahba","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":9,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["SOBANK","SOGESCOT","TRANSFERTBANQUE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Audit","Comptable","Juridique"]},{"Id":32,"Title":"LIWEN CONSEILS","OFFRE":"1 STARTER","Adresse":"56400 PLOUGOUMELEN","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Sophie Pernet","Pr_x00e9_nomNomassoci_x00e9_":"Romain Pernet","NBCollabs":10,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["QUADRA"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["WORD"],"Outils_x0020_Conseil":["Agiris","EIC","HENRRI","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Social"]},{"Id":33,"Title":"L'OPTIMISTE","OFFRE":"1 BACHELOR","Adresse":"13 Mail Louise Bourgeois 35000 RENNES","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Lise Xu - Louise Gortais","Pr_x00e9_nomNomassoci_x00e9_":"Ivan Quenardel","NBCollabs":33,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":3,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AUTRES"],"Outils_x0020_Prod_x0020_Social":["AGRUME"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","RCA MEG","REVUE FIDUCIAIRE"],"Outils_x0020_Conseil":["CEGID","EIC","FULLL","MEG","RCA"],"Certification":["Entreprise à mission"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE","SVP"],"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable","RH"]},{"Id":34,"Title":"ROUFFIAC","OFFRE":"1 STARTER","Adresse":"4, rue Carrerot, résidence d'Espagne 64000 Pau ET 1, rue Arnaud de Maytie64130 MAULÉON LICHARRE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Cendrine Rouffiac","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":14,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["CEGID","MYUNISOFT"],"Outils_x0020_Prod_x0020_Social":["AGIRIS","ISA PAYE"],"Outils_x0020_Prod_x0020_Juridiqu":["CEGID JURIDIQUE","EFL","JURIACT","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE"],"Outils_x0020_Conseil":["EIC","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":35,"Title":"SECOVAL","OFFRE":"1 STARTER","Adresse":"14 Avenue du 1er mai Parc Activités Saint-Joseph 04 100 MANOSQUE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Olivier Beltrando","Pr_x00e9_nomNomassoci_x00e9_":"Robert Raina - Emma Raina - Hicham Bouzelmad - Thibaut Blanchard","NBCollabs":35,"NBassoci_x00e9_s":5,"EChorsassoci_x00e9_s":0,"NBSites":5,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","AUTRES"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["AXONAUT","EIC","HENRRI","ISUITEEXPERT","MEG","RCA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["JAL"],"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN","JESIGNEEXPERT.COM","YOUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Audit","Communication","Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":36,"Title":"SKYNET","OFFRE":"2 CONNEXION","Adresse":"4 boulevard de Cimiez 06000 NICE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Elfie Menu - Véronique Blanc Nannini","Pr_x00e9_nomNomassoci_x00e9_":"Véronique Blanc Nannini","NBCollabs":15,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","WORD"],"Outils_x0020_Conseil":["MY COMPANY FILES","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL"],"Outil_x0020_bancaire":["JEDECLARE","TRANSFERTBANQUE"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable"]},{"Id":37,"Title":"SOFIGEC","OFFRE":"2 CONNEXION","Adresse":"360 allée Henri HUGONIOT BROGNARD BP50050 25461 ETUPES CEDEX","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Joséphine Bulle ","Pr_x00e9_nomNomassoci_x00e9_":"Convercy Geoffroy ","NBCollabs":20,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["AGIRIS","E. Collab","ISA PAYE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["EIC","FACTOMOS","RCA"],"Certification":["RSE"],"Outils_x0020_flux_x0020_d_x0027_":["INFODOC EXPERTS","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE","SYCOMORE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable","Social"]},{"Id":38,"Title":"SYNAPSE","OFFRE":"1 STARTER","Adresse":"BP 36 - 1, voie des Erables - 17 600 SAUJON","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Florent Merit","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":24,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":1,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","ACROCAC","AUTRES","CEGID"],"Outils_x0020_Prod_x0020_Social":["ACD PAIE","CADOR PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["BNC","EIC","EVOLIZ","ISUITEEXPERT","MEG","RCA","WAIBI"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","LA REVUE FIDUCIAIRE","LES ECHOS","MEDIALEX"],"Outil_x0020_bancaire":["JEDECLARE","SYCOMORE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Communication","Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":39,"Title":"THOMAS ET ASSOCIÉS","OFFRE":"3 AMBITION","Adresse":"6 place de l'homme de Fer 67000 STRASBOURG","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Marie Dubail ","Pr_x00e9_nomNomassoci_x00e9_":"Sylvain Thomas","NBCollabs":10,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","PENNYLANE","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["PAYFIT","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEFEBVRE DALLOZ","RCA MEG","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["MEG","RCA","SELLSY"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":40,"Title":"VALOXY","OFFRE":"1 STARTER","Adresse":"81 Rue du Pré Catelan bâtiment 5, 59110 LA MADELEINE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Ludovic Tiberghien","Pr_x00e9_nomNomassoci_x00e9_":"Géry Mailly - Pierre Toison","NBCollabs":130,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":4,"NBSites":12,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","AGIRIS"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["Agiris","EIC","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Audit","Communication","Comptable","Expert-comptable","Juridique","RH","Social"]},{"Id":41,"Title":"VMA ","OFFRE":"2 CONNEXION","Adresse":"6 Journiat 63122 CEYRAT","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Alexandre Volle","Pr_x00e9_nomNomassoci_x00e9_":"Sylvie Minguet","NBCollabs":26,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["QUADRA"],"Outils_x0020_Prod_x0020_Social":["QUADRA","QUADRA PAIE","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["CEGID","EIC"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable","Juridique","Social"]},{"Id":42,"Title":"YTHAK","OFFRE":"2 CONNEXION","Adresse":"26 rue Colonnel Dumont 38000 GRENOBLE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Nicolas Dumontroty","Pr_x00e9_nomNomassoci_x00e9_":"Aude Saetta - Pierre-Maxime Rejol","NBCollabs":39,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":0,"NBSites":3,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","ACROCAC","PENNYLANE"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["AXIOCAP","CAC Social","EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["EIC","ISUITEEXPERT","KANTA","MEG","MY COMPANY FILES","RCA"],"Certification":["Happy At Work"],"Outils_x0020_flux_x0020_d_x0027_":["AFFICHES PARISIENNES","EFL","LA REVUE FIDUCIAIRE","LES ECHOS","SVP","WEBLEX"],"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Audit","Comptable","Expert-comptable","Juridique","Numérique","Social"]},{"Id":43,"Title":"SYMELIOS","OFFRE":"2 CONNEXION","Adresse":"5 allée de Kérivarho 56000 VANNES","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Christophe Brochen","Pr_x00e9_nomNomassoci_x00e9_":"Mathieu Perennes - Frédéric Wester","NBCollabs":34,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":null,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["CEGID LOOP","PENNYLANE"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEXIS NEXIS","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["CEGID","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable","Juridique","Social"]},{"Id":44,"Title":"ADITIS","OFFRE":null,"Adresse":"Immeuble Le Dolmen 106A rue Eugène Pottier CS 51129 35 001 RENNES","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Maëlle MEHAULT - m.mehault@aditisaudit.fr","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":null,"NBassoci_x00e9_s":null,"EChorsassoci_x00e9_s":null,"NBSites":null,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":45,"Title":"RELYA","OFFRE":null,"Adresse":"191 Boulevard de Laval, 35500 VITRÉ","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Anthony Letue - aletue@relya.fr","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":null,"NBassoci_x00e9_s":null,"EChorsassoci_x00e9_s":null,"NBSites":null,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["CEGID"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEXIS NEXIS"],"Outils_x0020_Conseil":["MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Invité","Juridique","Social"]},{"Id":46,"Title":"GIE FLANDES","OFFRE":null,"Adresse":"91 rue Jules Ferry 59 240 DUNKERQUE / ROSENDAËL","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Philippe Duportail - philippe@duportail.fr","Pr_x00e9_nomNomassoci_x00e9_":"Jean-Phillipe Petit - jppetit2005@yahoo.fr ; Charlotte Queret - c.querret@alliance-experts.fr ; Christophe Vautrin - c.vautrin@audit-amv.fr ; Olivier Sevin - olivier.sevin@cogeflandre.fr","NBCollabs":null,"NBassoci_x00e9_s":null,"EChorsassoci_x00e9_s":null,"NBSites":null,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","CEGID","COALA SAGE"],"Outils_x0020_Prod_x0020_Social":["CEGID PGI","COALA","SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["EIC","MEG","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable","Invité","Social"]},{"Id":47,"Title":"JF MEHEUST EC","OFFRE":"3 AMBITION","Adresse":"2 H Rue de la Croix Lormel, 22190 PLERIN","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Jean-François Méheust","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":18,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","PENNYLANE"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","JURIACT","LEFEBVRE DALLOZ","RCA MEG","REVUE FIDUCIAIRE","WORD"],"Outils_x0020_Conseil":["EIC","FYGR","ISUITEEXPERT","KANTA","MEG","PROGBAT","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","LA REVUE FIDUCIAIRE","LES ECHOS","SVP"],"Outil_x0020_bancaire":["JEDECLARE","QONTO"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Comptable","Expert-comptable","Social"]},{"Id":48,"Title":"ACS2J","OFFRE":"3 AMBITION","Adresse":"Le Greenz Bâtiment F - 7 avenue de Tize 35235 THORIGNE-FOUILLARD","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Alexandre Joulain ; Charlotte Joulain","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":12,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":null,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["MYUNISOFT","QUADRA"],"Outils_x0020_Prod_x0020_Social":["QUADRA","QUADRA PAIE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEXIS NEXIS","RCA MEG","SAAS POLYACTE"],"Outils_x0020_Conseil":["KANTA","MEG","MY COMPANY FILES","RCA"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":["JEDECLARE","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Comptable","Expert-comptable"]},{"Id":49,"Title":"AJD CONSEILS","OFFRE":"1 STARTER","Adresse":"170 Route de Bordeaux 47700 CASTELJALOUX","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Jeanne Dubourg","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":10,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","SAGE","TIIME"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEFEBVRE DALLOZ","RCA MEG","WORD"],"Outils_x0020_Conseil":["COAXIS","ISUITEEXPERT","MEG","RCA"],"Certification":["Entreprise à mission"],"Outils_x0020_flux_x0020_d_x0027_":["JAL","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable","Juridique"]},{"Id":50,"Title":"QANTALIS","OFFRE":"2 CONNEXION","Adresse":"Parc Tertiaire de Laroiseau 19 rue Gertrude BELL CS 92162 56 005 VANNES Cédex","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Didier Seignard","Pr_x00e9_nomNomassoci_x00e9_":"Ronald Doucet, Vincent Bredoux, Kevin Le Guevelo, Benoit Bertrand, Yann Poences, Eric Le Pendeven, Hélène Le Garec","NBCollabs":80,"NBassoci_x00e9_s":8,"EChorsassoci_x00e9_s":null,"NBSites":4,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["ACD","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE"],"Outils_x0020_Conseil":["EIC","MEG","RCA","WAIBI"],"Certification":["RSE"],"Outils_x0020_flux_x0020_d_x0027_":["EFL","INFODOC EXPERTS","JAL","LA REVUE FIDUCIAIRE","MEDIALEX"],"Outil_x0020_bancaire":["JEDECLARE","SOBANK","SOGESCOT"],"Outil_x0020_de_x0020_signature_x":["DOCUSIGN"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable"]},{"Id":51,"Title":"ARAGOR","OFFRE":"2 CONNEXION","Adresse":"304 bis rue Garibaldi, 69007 LYON","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Catherine Pigeon","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":45,"NBassoci_x00e9_s":5,"EChorsassoci_x00e9_s":null,"NBSites":3,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS","AUTRES","REVISAUDIT"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["EFL","LEFEBVRE DALLOZ","LEXIS NEXIS","RCA MEG","REVUE FIDUCIAIRE","SAAS POLYACTE","WORD"],"Outils_x0020_Conseil":["Agiris","EIC","MEG","RCA","WELYB"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE","LES ECHOS"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Expert-comptable"]},{"Id":52,"Title":"TERRE D'EXPERTISE ET DE CONSEIL","OFFRE":"2 CONNEXION","Adresse":"3 bis rue Saint-Jacques 27700 LES ANDELYS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Edouard de Coninck","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":12,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":["AGIRIS"],"Outils_x0020_Prod_x0020_Social":["SILAE"],"Outils_x0020_Prod_x0020_Juridiqu":["LEXIS NEXIS","SAAS POLYACTE"],"Outils_x0020_Conseil":["Agiris","EIC","KANTA","RCA","WELYB"],"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":["EFL","LA REVUE FIDUCIAIRE"],"Outil_x0020_bancaire":["JEDECLARE"],"Outil_x0020_de_x0020_signature_x":["JESIGNEEXPERT.COM"],"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":["Administratif","Expert-comptable"]},{"Id":53,"Title":"DERELLE ET ASSOCIES","OFFRE":"ECO","Adresse":"16 route Nationale 117 - 64420 Nousty","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Marc Antoine Derelle","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":5,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":54,"Title":"AD EX OUEST","OFFRE":"ECO","Adresse":"37 RUE DU BIGNON 35510 CESSON-SEVIGNE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Marc Guéguin","Pr_x00e9_nomNomassoci_x00e9_":"Sébastien Cherruault ; MARIE PIERRE GERMAIN ; GAEL BAYLE ","NBCollabs":60,"NBassoci_x00e9_s":3,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":55,"Title":"CABINET GUILLAUME CLERGEAU","OFFRE":"ECO","Adresse":"10 RUE JACK LONDON 44400 REZE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Guillaume Clergeau","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":9,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":56,"Title":"ACOREV","OFFRE":"O2LAB","Adresse":"18 rue Claude Tillier, 75012 paris","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Valérie-Claude Picquart","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":6,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":57,"Title":"AGC2V EXPERTISE","OFFRE":"O2LAB","Adresse":"55 rue Marechal Gallieni,\n94490 Ormesson sur Marne","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Vanessa Ferreira","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":7,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":58,"Title":"AIR COMPTA","OFFRE":"O2LAB","Adresse":"1 Route de la Doumérié, 81570 Frejeville","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Olivier Darnaudet","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":2,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":59,"Title":"COACH EXPERTISE","OFFRE":"O2LAB","Adresse":"86 Avenue de la Marne\n56000 VANNES","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Bertrand Dion ","Pr_x00e9_nomNomassoci_x00e9_":"1","NBCollabs":3,"NBassoci_x00e9_s":0,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":60,"Title":"CDEGRILART EXPERT","OFFRE":"O2LAB","Adresse":"19 rue de Lourmel, 75015 Paris","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Cyril Degrilart","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":3,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":61,"Title":"COÉQUIPER ","OFFRE":"O2LAB","Adresse":"45, rue du noroît, 17180 Perigny","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"GOUPILLEAU ERWAN","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":4,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":62,"Title":"D3 COMPTA","OFFRE":"O2LAB","Adresse":"104 Chemin de Clères, 76230 Bois Guillaume","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Antoine Denoyelle","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":2,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":63,"Title":"DIGITABILIS","OFFRE":"O2LAB","Adresse":"Immeuble Hermès, 4 rue Jane Addams, 14280 Saint Contest","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Adrien Decoster","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":0,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":64,"Title":"DOTADVISORY","OFFRE":"O2LAB","Adresse":"12 rue Fedou, 11000 Carcassonne","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Damien Ducoup","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":2,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":65,"Title":"E.SENCIA","OFFRE":"O2LAB","Adresse":null,"Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Florence Lambert","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":3,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":66,"Title":"KBK EXPERT & CONSEIL","OFFRE":"O2LAB","Adresse":"255 Avenue du Prado, 13008 Marseille","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Kevin Bleitrach","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":4,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":67,"Title":"LITA","OFFRE":"O2LAB","Adresse":"19 rue de la République, 25000 Besançon","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Jean-Louis Lacoste, Marine Jeanne ","Pr_x00e9_nomNomassoci_x00e9_":"Marine Jeanne","NBCollabs":1,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":68,"Title":"MA COMPTA COOL (STCF)","OFFRE":"O2LAB","Adresse":"111, rue de la Lys, 59253 La Gorgue","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Stéphanie Bourgeois","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":8,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":69,"Title":"MARLÈNE BORNY","OFFRE":"O2LAB","Adresse":"111 Av. de la Résistance, 64360 Monein","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Marlène Borny","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":5,"NBassoci_x00e9_s":0,"EChorsassoci_x00e9_s":0,"NBSites":0,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":70,"Title":"NATHALIE BOUARD EXPERTISE","OFFRE":"O2LAB","Adresse":"2 All de la Forêt d'Halatte, 60100 Creil","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Nathalie Bouard","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":6,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":71,"Title":"NAVELLIS","OFFRE":"O2LAB","Adresse":"302 avenue du Général Leclerc, 47000 Agen","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Guillaume Tater","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":5,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":3,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":72,"Title":"NEOMI","OFFRE":"O2LAB","Adresse":"216 rue de Charenton, 75012 Paris","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Mohamed Nazamoudine","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":2,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":73,"Title":"NEXACO","OFFRE":"O2LAB","Adresse":"15 Bd Robert Thiboust, 77700 SERRIS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Jérémy Nivel","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":3,"NBassoci_x00e9_s":0,"EChorsassoci_x00e9_s":0,"NBSites":0,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":74,"Title":"SCCF","OFFRE":"O2LAB","Adresse":"31 rue des marottes, 78570 Andrésy","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Aurélie Blin","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":6,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":75,"Title":"SOIZE CONSEIL","OFFRE":"O2LAB","Adresse":"52 rue de Mareil, 78580 Maule","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Elisabeth Trebossen","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":0,"NBassoci_x00e9_s":0,"EChorsassoci_x00e9_s":0,"NBSites":0,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":76,"Title":"T3B EXPERTISE","OFFRE":"O2LAB","Adresse":"2 rue Mireille Brochier, 37540 Saint Cyr Sur Loire","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Thomas Berthelot","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":9,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":77,"Title":"TH AUDIT CONSEIL","OFFRE":"O2LAB","Adresse":"8 rue Parmentier, 21000 Dijon","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Theophile Held","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":0,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":78,"Title":"DM CONSULTANTS & ASSOCIÉS","OFFRE":"O2LAB","Adresse":"46, Boulevard Exelmans - 75016 PARIS","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Michael Benhamou","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":9,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":79,"Title":"CONCORDANCES","OFFRE":"O2LAB","Adresse":"54, rue Saint-Vincent 78200 Mantes-la-Jolie","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Matunda Elisabeth Georges","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":0,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":80,"Title":"NEODAF","OFFRE":"O2LAB","Adresse":"353 rue Georges Charpak ZA des portes de l’ouest N5\nCP / Ville 76150 ST JEAN DU CARDONNAY","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Steew Le Gal ","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":9,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":81,"Title":"SORGECO","OFFRE":"O2LAB","Adresse":"7 Avenue de la division Leclerc, 91340 Igny","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Philippe Stoffel","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":0,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":82,"Title":"2 A Expertise","OFFRE":"O2LAB","Adresse":"47 RUE CAZEAUX-CAZALET, 33410 CADILLAC-SUR-GARONNE","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Sandrine Stacchini ","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":8,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":null,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":83,"Title":"FIDUCIAIRE MADAR CONSEIL","OFFRE":"O2LAB","Adresse":"Maison des Services 121 Rue des moussaillons 30240 Le Grau du Roi","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Charlotte Liria","Pr_x00e9_nomNomassoci_x00e9_":"1","NBCollabs":10,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":2,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":84,"Title":"FINEORA ","OFFRE":"O2LAB","Adresse":"154 Rue d'Anvers 59200 TOURCOING","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Loic Bultez ","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":0,"NBassoci_x00e9_s":0,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":85,"Title":"ALLIANCE CONSEIL","OFFRE":"O2LAB","Adresse":"2 rue du Cure 27110 Le Neubourg ","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Delphine Lacire","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":3,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":86,"Title":"ENVOL EXPERT COMPTABLE ","OFFRE":"O2LAB","Adresse":"11 rue du moulin neuf 67500 Haguenau","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Olivier Erdinger","Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":3,"NBassoci_x00e9_s":1,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":87,"Title":null,"OFFRE":"O2LAB","Adresse":null,"Pr_x00e9_nomdur_x00e9_f_x00e9_re":null,"Pr_x00e9_nomNomassoci_x00e9_":null,"NBCollabs":null,"NBassoci_x00e9_s":null,"EChorsassoci_x00e9_s":null,"NBSites":null,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null},{"Id":88,"Title":"INNOVA EXPERTS & CONSEIL","OFFRE":"O2LAB","Adresse":"15 Chemin de la Crabe, 31300 Toulouse","Pr_x00e9_nomdur_x00e9_f_x00e9_re":"Jérémy Duthoit, Emmanuel Dora","Pr_x00e9_nomNomassoci_x00e9_":"Emmanuel Dora","NBCollabs":3,"NBassoci_x00e9_s":2,"EChorsassoci_x00e9_s":0,"NBSites":1,"CodespostauxSites":null,"Outils_x0020_client_x0020_PA":null,"Outils_x0020_Prod_x0020_Compta":null,"Outils_x0020_Prod_x0020_Social":null,"Outils_x0020_Prod_x0020_Juridiqu":null,"Outils_x0020_Conseil":null,"Certification":null,"Outils_x0020_flux_x0020_d_x0027_":null,"Outil_x0020_bancaire":null,"Outil_x0020_de_x0020_signature_x":null,"Outils_x0020_client_x0020_et_x00":null,"Outils_x0020_client_x0020_r_x00e":null,"Sp_x00e9_cialit_x00e9__x0020_de_":null}],"schema":[{"internal":"Title","label":"Nom du Cabinet","type":"cabinet"},{"internal":"OFFRE","label":"Offre Label","type":"choice","options":["1 BACHELOR","1 STARTER","2 MASTER","2 CONNEXION","3 AMBITION","3+ DOCTOR","ECO","O2LAB"]},{"internal":"Adresse","label":"Adresse Siège","type":"text"},{"internal":"Pr_x00e9_nomdur_x00e9_f_x00e9_re","label":"Prénom et Nom du référent","type":"text"},{"internal":"Pr_x00e9_nomNomassoci_x00e9_","label":"Prénom et Nom des associés","type":"text"},{"internal":"NBCollabs","label":"Effectif total","type":"number"},{"internal":"NBassoci_x00e9_s","label":"Nb Associés","type":"number"},{"internal":"EChorsassoci_x00e9_s","label":"Nb EC hors associés","type":"number"},{"internal":"NBSites","label":"Nb Sites ou Agences","type":"number"},{"internal":"CodespostauxSites","label":"Adresses Sites","type":"text"},{"internal":"Outils_x0020_client_x0020_PA","label":"Outils client PA","type":"multichoice","noneLabel":"Je n'ai pas encore choisi de PA","options":["Village connecté (ACD/RCA)","TeamSystem (ACD/Sellsy)","Pennylane","Cegid x Shine","Septeo","Agiris","Visma","Myunisoft","Jefacture","Sage","Tiime","Dext","Qonto","Seqino","Full","Je n'ai pas encore choisi de PA"]},{"internal":"Outils_x0020_Prod_x0020_Compta","label":"Outils Prod Compta","type":"multichoice","noneLabel":"Pas de compta","options":["CEGID LOOP","AGIRIS","ACD","CEGID","QUADRA","COALA SAGE","MYUNISOFT","REVISAUDIT","LOOP","PENNYLANE","ACROCAC","TIIME","REVOR","FIDU EXPERT","ISR SOFT","SAGE","AUTRES"]},{"internal":"Outils_x0020_Prod_x0020_Social","label":"Outils Prod Social","type":"multichoice","noneLabel":"Pas de social","options":["SILAE","AGIRIS","QUADRA PAIE","CEGID PGI","CADOR PAIE","QUADRA","COALA","SAGE PROD SOCIAL","ACD PAIE","PAIEGAZ","PAYFIT","HIFIVEWORK","E. Collab","ISA PAYE","AGRUME"]},{"internal":"Outils_x0020_Prod_x0020_Juridiqu","label":"Outils Prod Juridique","type":"multichoice","noneLabel":"Pas de juridique","options":["LEXIS NEXIS","WORD","EFL","SAAS POLYACTE","COALA","CEGID JURIDIQUE","REVUE FIDUCIAIRE","RCA MEG","QUADRATUS JURIDIQUE","CAC Social","FIDU EXPERT","AXIOCAP","LEFEBVRE DALLOZ","REVOR","JURIACT","CONFORMEEXPERT.COM"]},{"internal":"Outils_x0020_Conseil","label":"Outils Conseil","type":"multichoice","noneLabel":"Pas de conseil/gestion","options":["MEG","RCA","WAIBI","Agiris","EIC","BNC","MY COMPANY FILES","WELYB","KANTA","SESHA","PROGBAT","CEGID","ISUITEEXPERT","JEDATAVIZ.COM","SELLSY","FINTHESIS","EMASPHERE","HENRRI","FACTOMOS","FYGR","CAP PERFORMANCE","AXONAUT","EVOLIZ","BILLY","COAXIS","KWIPER","INQOM","SMARTISI","FULLL"]},{"internal":"Certification","label":"Certification","type":"multichoice","noneLabel":"Aucune certification","options":["Happy At Work","Avis Vérifiés","RSE","ISO 9001","ISO 14001","Qualiopi","Entreprise à mission"]},{"internal":"Outils_x0020_flux_x0020_d_x0027_","label":"Outils flux d'informations","type":"multichoice","noneLabel":"Pas d'outil flux d'info","options":["LES ECHOS","LA REVUE FIDUCIAIRE","EFL","WEBLEX","AFFICHES PARISIENNES","INFODOC EXPERTS","SVP","MEDIALEX","JAL"]},{"internal":"Outil_x0020_bancaire","label":"Outil bancaire","type":"multichoice","noneLabel":"Pas d'outil bancaire","options":["JEDECLARE","SOGESCOT","SOBANK","QONTO","SYCOMORE","MOONCARD","TRANSFERTBANQUE","GOCARDLESS","SHINE"]},{"internal":"Outil_x0020_de_x0020_signature_x","label":"Outil de signature électronique","type":"multichoice","noneLabel":"Pas de signature électronique","options":["YOUSIGN","JESIGNEEXPERT.COM","DOCUSIGN","ECHOSIGN"]},{"internal":"Outils_x0020_client_x0020_et_x00","label":"Outils client et missions","type":"multichoice","noneLabel":"Je n'ai pas d'outil de gestion des achats","options":["RCA (MEG)","ACD / TeamSystem (Facture)","Pennylane","Cegid x Shine","Septeo","Agiris","Progbat","Inqom / Visma","Myunisoft","Jefacture","Sage","Tiime","Evoliz","Qonto","Seqino","Axonaut","Full","Je n'ai pas choisi d'outil de gestion des achats"]},{"internal":"Outils_x0020_client_x0020_r_x00e","label":"Outils client réception","type":"multichoice","noneLabel":"Je n'ai pas d'outil de réception","options":["RCA (MEG)","ACD / TeamSystem","Pennylane","Cegid x Shine","Septeo","Agiris","Inqom / Visma","Myunisoft","Jefacture","Sage","Tiime","Dext","Qonto / Régate","Seqino","Chaintrust / Visma","Evoliz","Yooz","Full","Je n'ai pas choisi d'outil de gestion des achats"]},{"internal":"Sp_x00e9_cialit_x00e9__x0020_de_","label":"Spécialité de cabinet","type":"multichoice","noneLabel":"Aucune spécialité spécifique","options":["Comptable","Expert-comptable","Social","Juridique","Administratif","Audit","RH","Numérique","Communication","Invité"]}]};
+let DATA = __EMBED__;
+let SCHEMA = DATA.schema;
+let CABINETS = DATA.cabinets;
+let selectedCabinet = null;
+let formValues = {};
+
+// Admin mode
+const IS_ADMIN = new URLSearchParams(location.search).has('admin');
+if (IS_ADMIN) document.getElementById('admin-toolbar').classList.add('show');
+
+// Load custom schema from localStorage if any
+const customSchema = localStorage.getItem('labosphere_schema');
+if (customSchema) {
+  try { SCHEMA = JSON.parse(customSchema); } catch(e) { console.warn('Bad saved schema'); }
+}
+
+// === Fuzzy search ===
+function normalize(s) {
+  return (s || '').toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const v0 = new Array(b.length + 1).fill(0);
+  const v1 = new Array(b.length + 1).fill(0);
+  for (let i = 0; i <= b.length; i++) v0[i] = i;
+  for (let i = 0; i < a.length; i++) {
+    v1[0] = i + 1;
+    for (let j = 0; j < b.length; j++) {
+      const cost = a[i] === b[j] ? 0 : 1;
+      v1[j+1] = Math.min(v1[j] + 1, v0[j+1] + 1, v0[j] + cost);
+    }
+    for (let j = 0; j <= b.length; j++) v0[j] = v1[j];
+  }
+  return v1[b.length];
+}
+function similarity(a, b) {
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1;
+  return 1 - levenshtein(a, b) / maxLen;
+}
+
+function searchCabinets(query) {
+  const q = normalize(query);
+  if (!q) return [];
+  const results = CABINETS.map(c => {
+    const slug = normalize(c.Title || '');
+    const slugNoStop = slug; // simple
+    let score = 0;
+    if (slug === q) score = 100;
+    else if (slug.startsWith(q)) score = 80;
+    else if (slug.includes(q)) score = 60;
+    else {
+      score = similarity(slug, q) * 50;
+    }
+    return { cabinet: c, score };
+  }).filter(r => r.score > 10).sort((a, b) => b.score - a.score).slice(0, 5);
+  return results;
+}
+
+// === Cabinet search UI ===
+const cabinetInput = document.getElementById('cabinet-input');
+const suggestionsBox = document.getElementById('cabinet-suggestions');
+
+cabinetInput.addEventListener('input', () => {
+  const q = cabinetInput.value.trim();
+  if (!q) { suggestionsBox.classList.remove('show'); return; }
+  const results = searchCabinets(q);
+  renderSuggestions(results, q);
+});
+
+cabinetInput.addEventListener('focus', () => {
+  if (cabinetInput.value) {
+    const results = searchCabinets(cabinetInput.value);
+    renderSuggestions(results, cabinetInput.value);
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.cabinet-search-wrap')) {
+    suggestionsBox.classList.remove('show');
+  }
+});
+
+function renderSuggestions(results, query) {
+  if (!results.length) {
+    suggestionsBox.innerHTML = `
+      <div class="did-you-mean">Aucun cabinet trouvé pour "${escapeHtml(query)}".</div>
+      <div class="new-cabinet" onclick="selectNewCabinet('${escapeHtml(query).replace(/'/g, "\\'")}')">+ Créer un nouveau cabinet : "${escapeHtml(query)}"</div>
+    `;
+    suggestionsBox.classList.add('show');
+    return;
+  }
+  const topScore = results[0].score;
+  let html = '';
+  if (topScore < 60) {
+    const best = results[0].cabinet.Title;
+    html += `<div class="did-you-mean">Aucun match exact. Vouliez-vous dire : <strong>${escapeHtml(best)}</strong> ?</div>`;
+  }
+  for (const r of results) {
+    const c = r.cabinet;
+    const offre = c.OFFRE ? `<span class="label-tag">${escapeHtml(c.OFFRE)}</span>` : '';
+    html += `<div class="suggestion" data-id="${c.Id}" onclick="selectCabinet(${c.Id})">${escapeHtml(c.Title || '(sans nom)')}${offre}</div>`;
+  }
+  html += `<div class="new-cabinet" onclick="selectNewCabinet('${escapeHtml(query).replace(/'/g, "\\'")}')">+ Mon cabinet n'est pas listé : créer "${escapeHtml(query)}"</div>`;
+  suggestionsBox.innerHTML = html;
+  suggestionsBox.classList.add('show');
+}
+
+function selectCabinet(id) {
+  selectedCabinet = CABINETS.find(c => c.Id === id);
+  document.getElementById('selected-cabinet').textContent = selectedCabinet.Title;
+  document.getElementById('cabinet-section').style.display = 'none';
+  document.getElementById('form-section').style.display = 'block';
+  renderForm();
+  window.scrollTo(0, 0);
+}
+
+function selectNewCabinet(name) {
+  selectedCabinet = { Id: 'NEW', Title: name };
+  document.getElementById('selected-cabinet').textContent = name + ' (nouveau)';
+  document.getElementById('cabinet-section').style.display = 'none';
+  document.getElementById('form-section').style.display = 'block';
+  renderForm();
+  window.scrollTo(0, 0);
+}
+
+function changeCabinet() {
+  if (!confirm("Changer de cabinet ? Vos modifications non sauvées seront perdues.")) return;
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('cabinet-section').style.display = 'block';
+  cabinetInput.value = '';
+  formValues = {};
+  selectedCabinet = null;
+}
+
+// === Form rendering ===
+function renderForm() {
+  const form = document.getElementById('main-form');
+  let html = '<div class="section-title">Informations générales</div>';
+  formValues = {};
+  
+  const generalFields = SCHEMA.filter(s => s.internal !== 'Title' && s.type !== 'multichoice');
+  const multiFields = SCHEMA.filter(s => s.type === 'multichoice');
+  
+  for (const s of generalFields) {
+    html += renderField(s);
+  }
+  
+  html += '<div class="section-title">Outils & spécialités</div>';
+  for (const s of multiFields) {
+    html += renderField(s);
+  }
+  
+  form.innerHTML = html;
+  
+  // Init multi-select interactions
+  document.querySelectorAll('.ms-wrap').forEach(setupMultiSelect);
+}
+
+function getCurrentValue(field) {
+  if (!selectedCabinet || selectedCabinet.Id === 'NEW') return null;
+  const v = selectedCabinet[field.internal];
+  if (v === null || v === undefined) return null;
+  return v;
+}
+
+function renderField(s) {
+  const current = getCurrentValue(s);
+  const isReq = '<span class="req">*</span>';
+  
+  if (s.type === 'text') {
+    const val = current != null ? current : '';
+    return `
+      <div class="field" data-field="${s.internal}">
+        <label>${escapeHtml(s.label)} ${isReq}</label>
+        <input type="text" name="${s.internal}" value="${escapeHtml(val)}" oninput="onFieldChange(this, '${s.internal}')">
+        ${current ? `<div class="original" data-original="${escapeHtml(val)}">Valeur actuelle : ${escapeHtml(val)}</div>` : ''}
+        <div class="err-msg">Ce champ est obligatoire.</div>
+      </div>
+    `;
+  }
+  if (s.type === 'number') {
+    const val = current != null ? current : '';
+    return `
+      <div class="field" data-field="${s.internal}">
+        <label>${escapeHtml(s.label)} ${isReq}</label>
+        <input type="number" min="0" name="${s.internal}" value="${val}" oninput="onFieldChange(this, '${s.internal}')">
+        ${current != null ? `<div class="original" data-original="${val}">Valeur actuelle : ${val}</div>` : ''}
+        <div class="err-msg">Ce champ est obligatoire (entrez 0 si non applicable).</div>
+      </div>
+    `;
+  }
+  if (s.type === 'choice') {
+    const val = current || '';
+    let opts = '<option value="">— Choisir —</option>';
+    for (const o of s.options) {
+      opts += `<option value="${escapeHtml(o)}" ${o === val ? 'selected' : ''}>${escapeHtml(o)}</option>`;
+    }
+    return `
+      <div class="field" data-field="${s.internal}">
+        <label>${escapeHtml(s.label)} ${isReq}</label>
+        <select name="${s.internal}" onchange="onFieldChange(this, '${s.internal}')">${opts}</select>
+        ${current ? `<div class="original" data-original="${escapeHtml(val)}">Valeur actuelle : ${escapeHtml(val)}</div>` : ''}
+        <div class="err-msg">Ce champ est obligatoire.</div>
+      </div>
+    `;
+  }
+  if (s.type === 'multichoice') {
+    const currentArr = Array.isArray(current) ? current : [];
+    const noneLabel = s.noneLabel || 'Aucun';
+    // Build options list with none at top
+    let opts = `<div class="ms-option none-option">
+      <input type="checkbox" data-none="1"> <span>${escapeHtml(noneLabel)}</span>
+    </div>`;
+    for (const o of s.options) {
+      if (o === noneLabel) continue; // skip if duplicate
+      const checked = currentArr.includes(o);
+      opts += `<div class="ms-option">
+        <input type="checkbox" value="${escapeHtml(o)}" ${checked ? 'checked' : ''}>
+        <span>${escapeHtml(o)}</span>
+      </div>`;
+    }
+    return `
+      <div class="field" data-field="${s.internal}">
+        <label>${escapeHtml(s.label)} ${isReq}</label>
+        <div class="ms-wrap" data-field="${s.internal}" data-none="${escapeHtml(noneLabel)}">
+          <div class="ms-control" tabindex="0">
+            <div class="ms-tags"><span class="ms-placeholder">— Sélectionnez —</span></div>
+          </div>
+          <div class="ms-dropdown">
+            <input type="text" class="ms-search" placeholder="Filtrer…">
+            <div class="ms-options">${opts}</div>
+          </div>
+        </div>
+        ${currentArr.length ? `<div class="original" data-original="${escapeHtml(currentArr.join(';'))}">Valeur actuelle : ${escapeHtml(currentArr.join(', '))}</div>` : ''}
+        <div class="err-msg">Vous devez choisir au moins une option (cochez "${escapeHtml(noneLabel)}" si non applicable).</div>
+      </div>
+    `;
+  }
+  return '';
+}
+
+function setupMultiSelect(wrap) {
+  const control = wrap.querySelector('.ms-control');
+  const dropdown = wrap.querySelector('.ms-dropdown');
+  const search = wrap.querySelector('.ms-search');
+  const options = wrap.querySelector('.ms-options');
+  const field = wrap.dataset.field;
+  const noneLabel = wrap.dataset.none;
+  
+  control.addEventListener('click', (e) => {
+    document.querySelectorAll('.ms-dropdown.show').forEach(d => { if (d !== dropdown) d.classList.remove('show'); });
+    dropdown.classList.toggle('show');
+    if (dropdown.classList.contains('show')) search.focus();
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) dropdown.classList.remove('show');
+  });
+  
+  search.addEventListener('input', () => {
+    const q = search.value.toLowerCase();
+    options.querySelectorAll('.ms-option').forEach(opt => {
+      const txt = opt.textContent.toLowerCase();
+      opt.style.display = txt.includes(q) ? '' : 'none';
+    });
+  });
+  
+  options.addEventListener('change', (e) => {
+    if (e.target.type !== 'checkbox') return;
+    const isNone = e.target.dataset.none === '1';
+    if (isNone && e.target.checked) {
+      // Uncheck all others and disable
+      options.querySelectorAll('.ms-option:not(.none-option) input[type=checkbox]').forEach(cb => {
+        cb.checked = false;
+        cb.parentElement.classList.add('disabled');
+      });
+    } else if (isNone && !e.target.checked) {
+      options.querySelectorAll('.ms-option.disabled').forEach(o => o.classList.remove('disabled'));
+    } else {
+      // Uncheck "none" if checking a real option
+      options.querySelector('.ms-option.none-option input').checked = false;
+      options.querySelectorAll('.ms-option.disabled').forEach(o => o.classList.remove('disabled'));
+    }
+    updateMsControl(wrap);
+    onFieldChange(wrap, field);
+  });
+  
+  // Initial state
+  updateMsControl(wrap);
+}
+
+function updateMsControl(wrap) {
+  const control = wrap.querySelector('.ms-control .ms-tags');
+  const options = wrap.querySelector('.ms-options');
+  const noneLabel = wrap.dataset.none;
+  
+  const noneCb = options.querySelector('.ms-option.none-option input');
+  const checked = Array.from(options.querySelectorAll('.ms-option:not(.none-option) input:checked')).map(cb => cb.value);
+  
+  let html = '';
+  if (noneCb.checked) {
+    html = `<span class="ms-tag none-tag">${escapeHtml(noneLabel)}</span>`;
+  } else if (checked.length) {
+    html = checked.map(v => `<span class="ms-tag">${escapeHtml(v)}</span>`).join('');
+  } else {
+    html = `<span class="ms-placeholder">— Sélectionnez —</span>`;
+  }
+  control.innerHTML = html;
+}
+
+function onFieldChange(el, internalName) {
+  const fieldDiv = el.closest('.field');
+  fieldDiv.classList.remove('error');
+  
+  // Mark "modified" indicator
+  const orig = fieldDiv.querySelector('.original');
+  if (orig) {
+    const originalVal = orig.dataset.original;
+    let currentVal;
+    if (el.classList && el.classList.contains('ms-wrap')) {
+      const opts = el.querySelector('.ms-options');
+      const noneCb = opts.querySelector('.ms-option.none-option input');
+      if (noneCb.checked) currentVal = '__NONE__';
+      else {
+        const arr = Array.from(opts.querySelectorAll('.ms-option:not(.none-option) input:checked')).map(c => c.value);
+        currentVal = arr.join(';');
+      }
+    } else {
+      currentVal = el.value;
+    }
+    if (currentVal != originalVal) {
+      orig.classList.add('modified');
+      orig.textContent = '⚠ Modifié — valeur d\'origine : ' + (originalVal.length > 60 ? originalVal.slice(0, 60) + '…' : originalVal);
+    } else {
+      orig.classList.remove('modified');
+      orig.textContent = 'Valeur actuelle : ' + (originalVal.length > 60 ? originalVal.slice(0, 60) + '…' : originalVal);
+    }
+  }
+}
+
+// === Validation & submission ===
+function validate() {
+  let ok = true;
+  for (const s of SCHEMA) {
+    if (s.internal === 'Title') continue;
+    const fieldDiv = document.querySelector(`.field[data-field="${s.internal}"]`);
+    if (!fieldDiv) continue;
+    fieldDiv.classList.remove('error');
+    
+    let value;
+    if (s.type === 'multichoice') {
+      const opts = fieldDiv.querySelectorAll('.ms-option input');
+      const checked = Array.from(opts).filter(c => c.checked);
+      value = checked.length > 0;
+    } else {
+      const inp = fieldDiv.querySelector('input, select');
+      value = inp && inp.value.toString().trim() !== '';
+    }
+    if (!value) {
+      fieldDiv.classList.add('error');
+      ok = false;
+    }
+  }
+  return ok;
+}
+
+function collectValues() {
+  const out = { Title: selectedCabinet.Title, _isNew: selectedCabinet.Id === 'NEW', _Id: selectedCabinet.Id };
+  for (const s of SCHEMA) {
+    if (s.internal === 'Title') continue;
+    const fieldDiv = document.querySelector(`.field[data-field="${s.internal}"]`);
+    if (!fieldDiv) continue;
+    if (s.type === 'multichoice') {
+      const opts = fieldDiv.querySelectorAll('.ms-option input');
+      const noneCb = fieldDiv.querySelector('.ms-option.none-option input');
+      if (noneCb.checked) {
+        out[s.internal] = ['__NONE__:' + (s.noneLabel || 'Aucun')];
+      } else {
+        out[s.internal] = Array.from(opts).filter(c => c.checked && c.dataset.none !== '1').map(c => c.value);
+      }
+    } else {
+      const inp = fieldDiv.querySelector('input, select');
+      out[s.internal] = inp.value;
+    }
+  }
+  return out;
+}
+
+function submitForm() {
+  if (!validate()) {
+    const firstErr = document.querySelector('.field.error');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    alert('Veuillez remplir tous les champs obligatoires (en rouge).');
+    return;
+  }
+  const data = collectValues();
+  downloadCsv(data);
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('success-msg').style.display = 'block';
+}
+
+function downloadCsv(data) {
+  // CSV: 2 columns wide — Field, Value
+  const rows = [['_Cabinet', data.Title]];
+  rows.push(['_IsNew', data._isNew ? 'true' : 'false']);
+  rows.push(['_BackupId', data._Id || '']);
+  rows.push(['_Timestamp', new Date().toISOString()]);
+  for (const s of SCHEMA) {
+    if (s.internal === 'Title') continue;
+    let v = data[s.internal];
+    if (Array.isArray(v)) v = v.join(';');
+    rows.push([s.internal, v != null ? v : '']);
+    rows.push([`__label__${s.internal}`, s.label]);
+  }
+  const csv = rows.map(r => r.map(c => {
+    const s = c == null ? '' : c.toString();
+    return /[";\n,]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(';')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (data.Title || 'cabinet').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  a.download = `labosphere_${safeName}_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function resetForm() {
+  document.getElementById('success-msg').style.display = 'none';
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('cabinet-section').style.display = 'block';
+  cabinetInput.value = '';
+  selectedCabinet = null;
+  formValues = {};
+}
+
+// === Admin functions ===
+function exportSchema() {
+  const blob = new Blob([JSON.stringify(SCHEMA, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'labosphere_schema.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importSchema() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json';
+  inp.onchange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const newSchema = JSON.parse(ev.target.result);
+        localStorage.setItem('labosphere_schema', JSON.stringify(newSchema));
+        location.reload();
+      } catch(err) { alert('Erreur : JSON invalide'); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+function resetSchema() {
+  if (!confirm('Réinitialiser le schéma aux valeurs par défaut ?')) return;
+  localStorage.removeItem('labosphere_schema');
+  location.reload();
+}
+
+// === Helpers ===
+function escapeHtml(s) {
+  if (s == null) return '';
+  return s.toString().replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+</script>
+
+</body>
+</html>
