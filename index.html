@@ -4,315 +4,667 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mise à jour cabinet — Labosphère 3.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+:root {
+  --primary: #c8102e;
+  --primary-dark: #9c0a23;
+  --primary-light: #fff0f2;
+  --success: #16a34a;
+  --success-light: #f0fdf4;
+  --success-dark: #15803d;
+  --warning: #d97706;
+  --warning-light: #fffbeb;
+  --warning-dark: #b45309;
+  --gray-50: #fafbfc;
+  --gray-100: #f5f6f8;
+  --gray-200: #e8eaee;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-700: #374151;
+  --gray-900: #111827;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 0 4px rgba(200, 16, 46, 0.15);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f5f6fa;
-  color: #2c3e50;
-  line-height: 1.5;
-  padding: 20px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #fafbfc 0%, #f0f2f7 100%);
+  color: var(--gray-900);
+  line-height: 1.55;
+  padding: 32px 16px;
+  font-feature-settings: "cv11", "ss01";
+  min-height: 100vh;
 }
-.container { max-width: 800px; margin: 0 auto; }
+.container { max-width: 880px; margin: 0 auto; }
+
+/* Header */
 .header {
-  background: linear-gradient(135deg, #c8102e 0%, #e63946 100%);
+  background: linear-gradient(135deg, #c8102e 0%, #e63946 50%, #c8102e 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
   color: white;
-  padding: 30px;
-  border-radius: 12px 12px 0 0;
+  padding: 40px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
-.header h1 { font-size: 24px; margin-bottom: 8px; }
-.header p { opacity: 0.9; font-size: 14px; }
+@keyframes gradientShift {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.header::before {
+  content:"";
+  position:absolute; inset:0;
+  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.15) 0%, transparent 50%);
+  pointer-events:none;
+}
+.header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; position: relative; }
+.header p { opacity: 0.92; font-size: 14px; font-weight: 500; position: relative; }
+.header .badge {
+  display:inline-block; margin-top:12px;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(10px);
+  padding: 4px 12px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+/* Card */
 .card {
   background: white;
-  border-radius: 0 0 12px 12px;
-  padding: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-  margin-bottom: 20px;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 24px;
 }
-.field { margin-bottom: 20px; }
-.field label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #2c3e50;
-  font-size: 14px;
-}
-.field label .req { color: #c8102e; }
-.field input[type=text], .field input[type=number], .field select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 2px solid #e0e4e9;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-.field input:focus, .field select:focus {
-  outline: none;
-  border-color: #c8102e;
-}
-.field .original {
-  font-size: 12px;
-  color: #6c757d;
-  margin-top: 4px;
-  font-style: italic;
-}
-.field .original.modified { color: #e67e22; }
-.field.error input, .field.error .ms-control {
-  border-color: #c8102e !important;
-  background: #fff5f5;
-}
-.field .err-msg {
-  color: #c8102e;
-  font-size: 12px;
-  margin-top: 4px;
+
+/* Progress */
+.progress-wrap {
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 28px;
   display: none;
+  position: sticky;
+  top: 16px;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-md);
 }
-.field.error .err-msg { display: block; }
+.progress-wrap.show { display: block; }
+.progress-bar {
+  background: var(--gray-200);
+  height: 8px;
+  border-radius: 100px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress-bar > div {
+  background: linear-gradient(90deg, var(--primary), #ff4757);
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+  border-radius: 100px;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.progress-info .count { color: var(--primary); font-weight: 700; }
+.progress-info .total { color: var(--gray-500); font-weight: 500; }
 
 /* Cabinet search */
-.cabinet-search-wrap { position: relative; }
+.cabinet-search-wrap { position: relative; margin-bottom: 16px; }
+#cabinet-input {
+  width: 100%;
+  padding: 18px 22px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: white;
+}
+#cabinet-input::placeholder { color: var(--gray-500); font-weight: 400; }
+#cabinet-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-glow);
+}
 .cabinet-suggestions {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #e0e4e9;
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  max-height: 300px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  max-height: 360px;
   overflow-y: auto;
   z-index: 100;
   display: none;
+  box-shadow: var(--shadow-lg);
+  animation: slideDown 0.2s ease-out;
+}
+@keyframes slideDown {
+  from { opacity:0; transform:translateY(-8px); }
+  to { opacity:1; transform:translateY(0); }
 }
 .cabinet-suggestions.show { display: block; }
 .cabinet-suggestions .suggestion {
-  padding: 10px 12px;
+  padding: 14px 18px;
   cursor: pointer;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid var(--gray-100);
   font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s;
 }
-.cabinet-suggestions .suggestion:hover, .cabinet-suggestions .suggestion.active {
-  background: #f8f9fa;
+.cabinet-suggestions .suggestion:last-child { border-bottom: none; }
+.cabinet-suggestions .suggestion:hover {
+  background: var(--primary-light);
+  padding-left: 24px;
 }
-.cabinet-suggestions .suggestion .label-tag {
-  display: inline-block;
-  background: #c8102e;
+.cabinet-suggestions .label-tag {
+  background: var(--primary);
   color: white;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.3px;
 }
 .cabinet-suggestions .did-you-mean {
-  padding: 10px 12px;
-  background: #fff3cd;
+  padding: 14px 18px;
+  background: var(--warning-light);
   font-size: 13px;
-  color: #856404;
+  color: var(--warning-dark);
+  border-bottom: 1px solid var(--gray-100);
+  font-weight: 500;
 }
-.cabinet-suggestions .new-cabinet {
-  padding: 10px 12px;
-  background: #d1ecf1;
+.cabinet-suggestions .no-match {
+  padding: 24px 18px;
+  background: var(--warning-light);
+  font-size: 14px;
+  color: var(--warning-dark);
+  text-align: center;
+  font-weight: 500;
+}
+.cabinet-suggestions .no-match strong { display: block; margin-bottom: 4px; }
+.cabinet-suggestions .no-match small { font-weight: 400; opacity: 0.8; }
+
+/* Cabinet info banner */
+.cabinet-info {
+  background: linear-gradient(135deg, var(--primary-light) 0%, #fff 100%);
+  border-left: 4px solid var(--primary);
+  padding: 18px 22px;
+  border-radius: var(--radius-md);
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cabinet-info .cabinet-name {
   font-size: 13px;
+  color: var(--gray-700);
+  font-weight: 500;
+}
+.cabinet-info .cabinet-name strong {
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 800;
+  display: block;
+  margin-top: 2px;
+}
+.cabinet-info .change-link {
+  color: var(--primary);
   cursor: pointer;
-  color: #0c5460;
+  text-decoration: none;
+  font-size: 13px;
   font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: white;
+  border: 1px solid var(--gray-200);
+  transition: all 0.15s;
+}
+.cabinet-info .change-link:hover {
+  background: var(--gray-50);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
+/* Section title */
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 32px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--gray-500);
+  padding-left: 14px;
+  border-left: 3px solid var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title:first-of-type { margin-top: 0; }
+.section-title .section-count {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Field card */
+.field {
+  background: white;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  transition: all 0.2s cubic-bezier(0.65, 0, 0.35, 1);
+  position: relative;
+}
+.field:hover { border-color: var(--gray-300); }
+.field.confirmed {
+  background: var(--success-light);
+  border-color: var(--success);
+}
+.field.modified {
+  background: var(--warning-light);
+  border-color: var(--warning);
+}
+.field.pending { border-color: var(--gray-200); }
+.field.error {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  animation: shake 0.4s;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.field-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--gray-900);
+  flex: 1;
+  min-width: 200px;
+}
+.field-label .req { color: var(--primary); margin-left: 2px; }
+.field-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 3px 9px;
+  border-radius: 100px;
+}
+.field-status.pending { background: var(--gray-100); color: var(--gray-500); }
+.field-status.confirmed { background: var(--success); color: white; }
+.field-status.modified { background: var(--warning); color: white; }
+
+.field-current-value {
+  font-size: 14px;
+  color: var(--gray-700);
+  padding: 10px 14px;
+  background: var(--gray-50);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+  word-wrap: break-word;
+  margin-bottom: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.field-current-value.empty {
+  color: var(--gray-500);
+  font-style: italic;
+  font-weight: 400;
+}
+.field-current-value .tag-pill {
+  display: inline-block;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 100px;
+  padding: 2px 9px;
+  font-size: 12px;
+  margin: 2px 3px 2px 0;
+  font-weight: 500;
+}
+
+.field-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.field-actions .btn-action {
+  border: 1.5px solid var(--gray-200);
+  background: white;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+  color: var(--gray-700);
+}
+.field-actions .btn-action:hover {
+  border-color: var(--gray-300);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.field-actions .btn-action.btn-confirm:hover {
+  border-color: var(--success);
+  color: var(--success-dark);
+  background: var(--success-light);
+}
+.field-actions .btn-action.btn-modify:hover {
+  border-color: var(--warning);
+  color: var(--warning-dark);
+  background: var(--warning-light);
+}
+.field-actions .btn-action.active.btn-confirm {
+  background: var(--success);
+  border-color: var(--success);
+  color: white;
+}
+.field-actions .btn-action.active.btn-modify {
+  background: var(--warning);
+  border-color: var(--warning);
+  color: white;
+}
+
+/* Edit area */
+.field-edit { display: none; margin-top: 12px; }
+.field.modified .field-edit { display: block; }
+
+.field-edit input[type=text], .field-edit input[type=number], .field-edit select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  background: white;
+  transition: all 0.15s;
+}
+.field-edit input:focus, .field-edit select:focus {
+  outline: none;
+  border-color: var(--warning);
+  box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.12);
+}
+.field-edit .err-msg {
+  color: var(--primary);
+  font-size: 12px;
+  margin-top: 6px;
+  font-weight: 500;
+  display: none;
+}
+.field.error .field-edit .err-msg { display: block; }
+
 /* Multi-select */
+.ms-wrap { position: relative; }
 .ms-control {
   width: 100%;
-  padding: 10px 12px;
-  border: 2px solid #e0e4e9;
-  border-radius: 6px;
+  padding: 11px 14px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   background: white;
   font-size: 14px;
-  min-height: 42px;
+  min-height: 44px;
   position: relative;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  transition: all 0.15s;
 }
+.ms-control:hover { border-color: var(--gray-300); }
 .ms-control:after {
-  content: "▼";
+  content: "▾";
   position: absolute;
-  right: 12px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 10px;
-  color: #6c757d;
+  font-size: 14px;
+  color: var(--gray-500);
 }
-.ms-tags { display: flex; flex-wrap: wrap; gap: 4px; padding-right: 24px; }
+.ms-tags { display: flex; flex-wrap: wrap; gap: 5px; padding-right: 28px; flex: 1; }
 .ms-tag {
-  background: #c8102e;
+  background: var(--warning);
   color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 3px 10px;
+  border-radius: 100px;
   font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
 }
-.ms-tag.none-tag { background: #6c757d; }
-.ms-placeholder { color: #9aa5b1; }
+.ms-tag.none-tag { background: var(--gray-500); }
+.ms-placeholder { color: var(--gray-500); font-weight: 400; }
 .ms-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   background: white;
-  border: 2px solid #e0e4e9;
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  max-height: 300px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  max-height: 320px;
   overflow-y: auto;
   z-index: 50;
   display: none;
+  box-shadow: var(--shadow-lg);
 }
-.ms-dropdown.show { display: block; }
+.ms-dropdown.show {
+  display: block;
+  animation: slideDown 0.15s ease-out;
+}
 .ms-search {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: none;
-  border-bottom: 1px solid #e0e4e9;
+  border-bottom: 1px solid var(--gray-200);
   font-size: 13px;
   position: sticky;
   top: 0;
   background: white;
+  font-family: inherit;
+  font-weight: 500;
 }
 .ms-search:focus { outline: none; }
 .ms-option {
-  padding: 8px 12px;
+  padding: 9px 14px;
   cursor: pointer;
   font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #f5f6f8;
+  gap: 10px;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.1s;
+  font-weight: 500;
 }
-.ms-option:hover { background: #f8f9fa; }
+.ms-option:last-child { border-bottom: none; }
+.ms-option:hover { background: var(--gray-50); }
 .ms-option input[type=checkbox] {
   margin: 0;
   cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--warning);
 }
 .ms-option.none-option {
-  background: #fff3cd;
-  color: #856404;
-  font-weight: 600;
-  border-bottom: 2px solid #ffeaa7;
+  background: var(--warning-light);
+  color: var(--warning-dark);
+  font-weight: 700;
+  border-bottom: 2px solid var(--warning);
 }
+.ms-option.none-option input { accent-color: var(--warning); }
 .ms-option.disabled {
   opacity: 0.4;
   pointer-events: none;
 }
-.ms-wrap { position: relative; }
 
-/* Buttons */
-.btn {
-  display: inline-block;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-primary {
-  background: #c8102e;
-  color: white;
-}
-.btn-primary:hover { background: #a30d27; }
-.btn-primary:disabled {
-  background: #b8c5d3;
-  cursor: not-allowed;
-}
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-.btn-success { background: #28a745; color: white; }
-
-.section-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-top: 30px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f0f2f5;
-  color: #c8102e;
-}
-.section-title:first-of-type { margin-top: 0; }
-
-#form-section { display: none; }
-.cabinet-info {
-  background: #e8f4ff;
-  border-left: 4px solid #c8102e;
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 24px;
-  font-size: 14px;
-}
-.cabinet-info strong { color: #c8102e; }
-.cabinet-info .change-link {
-  float: right;
-  color: #c8102e;
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: 13px;
-}
-
+/* Submit area */
 .submit-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 30px;
-  padding-top: 24px;
-  border-top: 2px solid #f0f2f5;
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 2px dashed var(--gray-200);
+  gap: 16px;
+  flex-wrap: wrap;
 }
-.submit-info { font-size: 13px; color: #6c757d; flex: 1; margin-right: 16px; }
+.submit-info {
+  font-size: 13px;
+  color: var(--gray-500);
+  flex: 1;
+  font-weight: 500;
+  line-height: 1.4;
+  min-width: 200px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(200, 16, 46, 0.3);
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(200, 16, 46, 0.4);
+}
+.btn-primary:disabled {
+  background: var(--gray-300);
+  color: var(--gray-500);
+  cursor: not-allowed;
+  box-shadow: none;
+}
 
+/* Success */
 #success-msg {
   display: none;
-  background: #d4edda;
-  border: 2px solid #28a745;
-  padding: 24px;
-  border-radius: 8px;
-  margin-top: 20px;
+  background: linear-gradient(135deg, var(--success-light), white);
+  border: 2px solid var(--success);
+  padding: 40px;
+  border-radius: var(--radius-lg);
   text-align: center;
+  margin-top: 24px;
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-#success-msg h3 { color: #155724; margin-bottom: 8px; }
-#success-msg p { color: #155724; font-size: 14px; }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+#success-msg .check {
+  width: 64px; height: 64px;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+}
+#success-msg h3 { color: var(--success-dark); margin-bottom: 8px; font-size: 22px; font-weight: 800; }
+#success-msg p { color: var(--gray-700); font-size: 15px; max-width: 480px; margin: 0 auto 16px; }
+#success-msg .btn-primary { background: var(--success); box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3); }
 
+/* Admin toolbar */
 .admin-toolbar {
-  background: #2c3e50;
+  background: var(--gray-900);
   color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 14px 22px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
   font-size: 13px;
+  font-weight: 600;
   display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.admin-toolbar.show { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.admin-toolbar.show { display: flex; }
+.admin-toolbar .actions { display: flex; gap: 8px; }
 .admin-toolbar button {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
   color: white;
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
 }
-.admin-toolbar button:hover { background: rgba(255,255,255,0.3); }
-.admin-toolbar input {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.3);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
+.admin-toolbar button:hover { background: rgba(255,255,255,0.2); }
+
+.footer {
+  text-align: center;
   font-size: 12px;
+  color: var(--gray-500);
+  padding: 16px 0;
+  font-weight: 500;
 }
 
 @media (max-width: 600px) {
-  body { padding: 10px; }
-  .card { padding: 20px; }
-  .header { padding: 20px; }
+  body { padding: 16px 8px; }
+  .card { padding: 24px; }
+  .header { padding: 28px 20px; }
+  .header h1 { font-size: 22px; }
+  .field { padding: 14px 16px; }
+  .field-head { flex-direction: column; gap: 8px; }
+  .submit-row { flex-direction: column; align-items: stretch; }
+  .btn-primary { justify-content: center; }
 }
 </style>
 </head>
@@ -321,51 +673,65 @@ body {
 <div class="container">
   <div class="header">
     <h1>Mise à jour informations cabinet</h1>
-    <p>Labosphère 3.0 — Confirmez ou modifiez les données de votre cabinet</p>
+    <p>Labosphère 3.0 — Vérifiez et validez vos données</p>
+    <span class="badge">Confidentiel · à compléter par le dirigeant</span>
   </div>
   
   <div class="admin-toolbar" id="admin-toolbar">
-    <span><strong>Mode admin actif</strong> · Modifiez les libellés et options ci-dessous</span>
-    <button onclick="exportSchema()">Exporter schéma</button>
-    <button onclick="importSchema()">Importer schéma</button>
-    <button onclick="resetSchema()">Réinitialiser</button>
+    <span><strong>Mode admin</strong> · Modifiez le schéma ci-dessous</span>
+    <div class="actions">
+      <button onclick="exportSchema()">Exporter</button>
+      <button onclick="importSchema()">Importer</button>
+      <button onclick="resetSchema()">Réinitialiser</button>
+    </div>
   </div>
   
   <div class="card">
-    <!-- Step 1: Cabinet search -->
     <div id="cabinet-section">
-      <div class="field">
-        <label>Nom de votre cabinet <span class="req">*</span></label>
-        <div class="cabinet-search-wrap">
-          <input type="text" id="cabinet-input" placeholder="Tapez le nom de votre cabinet (ex. copil...)" autocomplete="off">
-          <div class="cabinet-suggestions" id="cabinet-suggestions"></div>
-        </div>
+      <div class="cabinet-search-wrap">
+        <input type="text" id="cabinet-input" placeholder="Rechercher votre cabinet… (ex. copil, adour, audex…)" autocomplete="off">
+        <div class="cabinet-suggestions" id="cabinet-suggestions"></div>
       </div>
     </div>
     
-    <!-- Step 2: Form fields (rendered dynamically) -->
-    <div id="form-section">
-      <div class="cabinet-info" id="cabinet-info">
-        <span>Cabinet sélectionné : <strong id="selected-cabinet"></strong></span>
-        <span class="change-link" onclick="changeCabinet()">Changer</span>
+    <div id="form-section" style="display:none;">
+      <div class="cabinet-info">
+        <div class="cabinet-name">
+          Cabinet sélectionné
+          <strong id="selected-cabinet"></strong>
+        </div>
+        <span class="change-link" onclick="changeCabinet()">↩ Changer de cabinet</span>
+      </div>
+      
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-info">
+          <span><span class="count" id="progress-count">0</span> / <span class="total" id="progress-total">0</span> champs validés</span>
+          <span style="color: var(--gray-500); font-weight: 500;" id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar"><div id="progress-fill" style="width: 0%;"></div></div>
       </div>
       
       <form id="main-form"></form>
       
       <div class="submit-row">
         <div class="submit-info">
-          ⚠️ Tous les champs sont obligatoires. Si vous ne faites pas X, cochez l'option "Pas de X".
+          💡 Cliquez sur <strong>Confirmer</strong> si l'info est correcte ou <strong>Modifier</strong> pour la changer. Tous les champs doivent être validés.
         </div>
-        <button class="btn btn-primary" id="btn-submit" onclick="submitForm()">Valider & télécharger CSV</button>
+        <button class="btn-primary" id="btn-submit" onclick="submitForm()" disabled>
+          📥 Valider & télécharger CSV
+        </button>
       </div>
     </div>
     
     <div id="success-msg">
-      <h3>✓ Réponse enregistrée</h3>
-      <p>Le fichier CSV a été téléchargé. Merci de l'envoyer à l'administrateur Labosphère par mail.</p>
-      <button class="btn btn-secondary" onclick="resetForm()" style="margin-top: 16px;">Faire une autre saisie</button>
+      <div class="check">✓</div>
+      <h3>Merci !</h3>
+      <p>Votre saisie a bien été enregistrée et le fichier CSV téléchargé.<br>Veuillez l'envoyer à l'administrateur Labosphère par mail.</p>
+      <button class="btn-primary" onclick="resetForm()">Faire une autre saisie</button>
     </div>
   </div>
+  
+  <div class="footer">Labosphère 3.0 · Mise à jour cabinet — &copy; 2026</div>
 </div>
 
 <script>
@@ -374,14 +740,12 @@ let DATA = __EMBED__;
 let SCHEMA = DATA.schema;
 let CABINETS = DATA.cabinets;
 let selectedCabinet = null;
-let formValues = {};
+let fieldStates = {}; // internal -> 'pending' | 'confirmed' | 'modified'
 
-// Admin mode
 const IS_ADMIN = new URLSearchParams(location.search).has('admin');
 if (IS_ADMIN) document.getElementById('admin-toolbar').classList.add('show');
 
-// Load custom schema from localStorage if any
-const customSchema = localStorage.getItem('labosphere_schema');
+const customSchema = localStorage.getItem('labosphere_schema_v2');
 if (customSchema) {
   try { SCHEMA = JSON.parse(customSchema); } catch(e) { console.warn('Bad saved schema'); }
 }
@@ -410,74 +774,58 @@ function levenshtein(a, b) {
   return v1[b.length];
 }
 function similarity(a, b) {
-  const maxLen = Math.max(a.length, b.length);
-  if (maxLen === 0) return 1;
-  return 1 - levenshtein(a, b) / maxLen;
+  const m = Math.max(a.length, b.length);
+  return m === 0 ? 1 : 1 - levenshtein(a, b) / m;
 }
 
 function searchCabinets(query) {
   const q = normalize(query);
   if (!q) return [];
-  const results = CABINETS.map(c => {
+  return CABINETS.map(c => {
     const slug = normalize(c.Title || '');
-    const slugNoStop = slug; // simple
-    let score = 0;
+    let score;
     if (slug === q) score = 100;
-    else if (slug.startsWith(q)) score = 80;
-    else if (slug.includes(q)) score = 60;
-    else {
-      score = similarity(slug, q) * 50;
-    }
+    else if (slug.startsWith(q)) score = 85;
+    else if (slug.includes(q)) score = 65;
+    else score = similarity(slug, q) * 55;
     return { cabinet: c, score };
-  }).filter(r => r.score > 10).sort((a, b) => b.score - a.score).slice(0, 5);
-  return results;
+  }).filter(r => r.score > 15).sort((a, b) => b.score - a.score).slice(0, 6);
 }
 
-// === Cabinet search UI ===
 const cabinetInput = document.getElementById('cabinet-input');
 const suggestionsBox = document.getElementById('cabinet-suggestions');
 
 cabinetInput.addEventListener('input', () => {
   const q = cabinetInput.value.trim();
   if (!q) { suggestionsBox.classList.remove('show'); return; }
-  const results = searchCabinets(q);
-  renderSuggestions(results, q);
+  renderSuggestions(searchCabinets(q), q);
 });
 
 cabinetInput.addEventListener('focus', () => {
-  if (cabinetInput.value) {
-    const results = searchCabinets(cabinetInput.value);
-    renderSuggestions(results, cabinetInput.value);
-  }
+  if (cabinetInput.value) renderSuggestions(searchCabinets(cabinetInput.value), cabinetInput.value);
 });
 
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.cabinet-search-wrap')) {
-    suggestionsBox.classList.remove('show');
-  }
+  if (!e.target.closest('.cabinet-search-wrap')) suggestionsBox.classList.remove('show');
 });
 
 function renderSuggestions(results, query) {
   if (!results.length) {
-    suggestionsBox.innerHTML = `
-      <div class="did-you-mean">Aucun cabinet trouvé pour "${escapeHtml(query)}".</div>
-      <div class="new-cabinet" onclick="selectNewCabinet('${escapeHtml(query).replace(/'/g, "\\'")}')">+ Créer un nouveau cabinet : "${escapeHtml(query)}"</div>
-    `;
+    suggestionsBox.innerHTML = `<div class="no-match"><strong>Aucun cabinet trouvé pour "${escapeHtml(query)}"</strong><small>Vérifiez l'orthographe ou contactez l'administrateur Labosphère.</small></div>`;
     suggestionsBox.classList.add('show');
     return;
   }
-  const topScore = results[0].score;
+  const top = results[0];
   let html = '';
-  if (topScore < 60) {
-    const best = results[0].cabinet.Title;
-    html += `<div class="did-you-mean">Aucun match exact. Vouliez-vous dire : <strong>${escapeHtml(best)}</strong> ?</div>`;
+  if (top.score < 65) {
+    html += `<div class="did-you-mean">🤔 Vouliez-vous dire : <strong>${escapeHtml(top.cabinet.Title)}</strong> ?</div>`;
   }
   for (const r of results) {
     const c = r.cabinet;
     const offre = c.OFFRE ? `<span class="label-tag">${escapeHtml(c.OFFRE)}</span>` : '';
-    html += `<div class="suggestion" data-id="${c.Id}" onclick="selectCabinet(${c.Id})">${escapeHtml(c.Title || '(sans nom)')}${offre}</div>`;
+    html += `<div class="suggestion" data-id="${c.Id}" onclick="selectCabinet(${c.Id})">
+      <span>${escapeHtml(c.Title || '(sans nom)')}</span>${offre}</div>`;
   }
-  html += `<div class="new-cabinet" onclick="selectNewCabinet('${escapeHtml(query).replace(/'/g, "\\'")}')">+ Mon cabinet n'est pas listé : créer "${escapeHtml(query)}"</div>`;
   suggestionsBox.innerHTML = html;
   suggestionsBox.classList.add('show');
 }
@@ -487,129 +835,117 @@ function selectCabinet(id) {
   document.getElementById('selected-cabinet').textContent = selectedCabinet.Title;
   document.getElementById('cabinet-section').style.display = 'none';
   document.getElementById('form-section').style.display = 'block';
+  document.getElementById('progress-wrap').classList.add('show');
   renderForm();
-  window.scrollTo(0, 0);
-}
-
-function selectNewCabinet(name) {
-  selectedCabinet = { Id: 'NEW', Title: name };
-  document.getElementById('selected-cabinet').textContent = name + ' (nouveau)';
-  document.getElementById('cabinet-section').style.display = 'none';
-  document.getElementById('form-section').style.display = 'block';
-  renderForm();
-  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function changeCabinet() {
-  if (!confirm("Changer de cabinet ? Vos modifications non sauvées seront perdues.")) return;
+  if (!confirm("Changer de cabinet ? Vos modifications seront perdues.")) return;
   document.getElementById('form-section').style.display = 'none';
+  document.getElementById('progress-wrap').classList.remove('show');
   document.getElementById('cabinet-section').style.display = 'block';
   cabinetInput.value = '';
-  formValues = {};
   selectedCabinet = null;
+  fieldStates = {};
 }
 
 // === Form rendering ===
 function renderForm() {
   const form = document.getElementById('main-form');
-  let html = '<div class="section-title">Informations générales</div>';
-  formValues = {};
+  fieldStates = {};
   
-  const generalFields = SCHEMA.filter(s => s.internal !== 'Title' && s.type !== 'multichoice');
-  const multiFields = SCHEMA.filter(s => s.type === 'multichoice');
+  const fields = SCHEMA.filter(s => s.internal !== 'Title');
+  const groups = {
+    'Informations générales': fields.filter(s => s.type !== 'multichoice'),
+    'Outils & spécialités du cabinet': fields.filter(s => s.type === 'multichoice')
+  };
   
-  for (const s of generalFields) {
-    html += renderField(s);
+  let html = '';
+  for (const [title, list] of Object.entries(groups)) {
+    html += `<div class="section-title"><span>${title}</span><span class="section-count">${list.length}</span></div>`;
+    for (const s of list) {
+      fieldStates[s.internal] = 'pending';
+      html += renderField(s);
+    }
   }
-  
-  html += '<div class="section-title">Outils & spécialités</div>';
-  for (const s of multiFields) {
-    html += renderField(s);
-  }
-  
   form.innerHTML = html;
   
-  // Init multi-select interactions
   document.querySelectorAll('.ms-wrap').forEach(setupMultiSelect);
+  document.getElementById('progress-total').textContent = fields.length;
+  updateProgress();
 }
 
 function getCurrentValue(field) {
-  if (!selectedCabinet || selectedCabinet.Id === 'NEW') return null;
+  if (!selectedCabinet) return null;
   const v = selectedCabinet[field.internal];
   if (v === null || v === undefined) return null;
   return v;
 }
 
+function formatCurrentDisplay(field, value) {
+  if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) {
+    return `<div class="field-current-value empty">— Aucune valeur enregistrée —</div>`;
+  }
+  if (Array.isArray(value)) {
+    const tags = value.map(v => `<span class="tag-pill">${escapeHtml(v)}</span>`).join('');
+    return `<div class="field-current-value">${tags}</div>`;
+  }
+  return `<div class="field-current-value">${escapeHtml(value.toString())}</div>`;
+}
+
 function renderField(s) {
   const current = getCurrentValue(s);
-  const isReq = '<span class="req">*</span>';
+  const display = formatCurrentDisplay(s, current);
+  const editForm = renderEditForm(s, current);
   
+  return `
+    <div class="field pending" data-field="${s.internal}">
+      <div class="field-head">
+        <div class="field-label">${escapeHtml(s.label)} <span class="req">*</span></div>
+        <span class="field-status pending">À vérifier</span>
+      </div>
+      ${display}
+      <div class="field-actions">
+        <button type="button" class="btn-action btn-confirm" onclick="setFieldState('${s.internal}', 'confirmed')">✓ Confirmer</button>
+        <button type="button" class="btn-action btn-modify" onclick="setFieldState('${s.internal}', 'modified')">✏ Modifier</button>
+      </div>
+      <div class="field-edit">${editForm}<div class="err-msg">Ce champ ne peut pas rester vide.</div></div>
+    </div>
+  `;
+}
+
+function renderEditForm(s, current) {
   if (s.type === 'text') {
     const val = current != null ? current : '';
-    return `
-      <div class="field" data-field="${s.internal}">
-        <label>${escapeHtml(s.label)} ${isReq}</label>
-        <input type="text" name="${s.internal}" value="${escapeHtml(val)}" oninput="onFieldChange(this, '${s.internal}')">
-        ${current ? `<div class="original" data-original="${escapeHtml(val)}">Valeur actuelle : ${escapeHtml(val)}</div>` : ''}
-        <div class="err-msg">Ce champ est obligatoire.</div>
-      </div>
-    `;
+    return `<input type="text" name="${s.internal}" value="${escapeHtml(val)}" oninput="onEditChange(this, '${s.internal}')">`;
   }
   if (s.type === 'number') {
     const val = current != null ? current : '';
-    return `
-      <div class="field" data-field="${s.internal}">
-        <label>${escapeHtml(s.label)} ${isReq}</label>
-        <input type="number" min="0" name="${s.internal}" value="${val}" oninput="onFieldChange(this, '${s.internal}')">
-        ${current != null ? `<div class="original" data-original="${val}">Valeur actuelle : ${val}</div>` : ''}
-        <div class="err-msg">Ce champ est obligatoire (entrez 0 si non applicable).</div>
-      </div>
-    `;
+    return `<input type="number" min="0" name="${s.internal}" value="${val}" oninput="onEditChange(this, '${s.internal}')">`;
   }
   if (s.type === 'choice') {
     const val = current || '';
     let opts = '<option value="">— Choisir —</option>';
-    for (const o of s.options) {
-      opts += `<option value="${escapeHtml(o)}" ${o === val ? 'selected' : ''}>${escapeHtml(o)}</option>`;
-    }
-    return `
-      <div class="field" data-field="${s.internal}">
-        <label>${escapeHtml(s.label)} ${isReq}</label>
-        <select name="${s.internal}" onchange="onFieldChange(this, '${s.internal}')">${opts}</select>
-        ${current ? `<div class="original" data-original="${escapeHtml(val)}">Valeur actuelle : ${escapeHtml(val)}</div>` : ''}
-        <div class="err-msg">Ce champ est obligatoire.</div>
-      </div>
-    `;
+    for (const o of s.options) opts += `<option value="${escapeHtml(o)}" ${o === val ? 'selected' : ''}>${escapeHtml(o)}</option>`;
+    return `<select name="${s.internal}" onchange="onEditChange(this, '${s.internal}')">${opts}</select>`;
   }
   if (s.type === 'multichoice') {
     const currentArr = Array.isArray(current) ? current : [];
     const noneLabel = s.noneLabel || 'Aucun';
-    // Build options list with none at top
-    let opts = `<div class="ms-option none-option">
-      <input type="checkbox" data-none="1"> <span>${escapeHtml(noneLabel)}</span>
-    </div>`;
+    let opts = `<div class="ms-option none-option"><input type="checkbox" data-none="1"> <span>${escapeHtml(noneLabel)}</span></div>`;
     for (const o of s.options) {
-      if (o === noneLabel) continue; // skip if duplicate
+      if (o === noneLabel) continue;
       const checked = currentArr.includes(o);
-      opts += `<div class="ms-option">
-        <input type="checkbox" value="${escapeHtml(o)}" ${checked ? 'checked' : ''}>
-        <span>${escapeHtml(o)}</span>
-      </div>`;
+      opts += `<div class="ms-option"><input type="checkbox" value="${escapeHtml(o)}" ${checked ? 'checked' : ''}> <span>${escapeHtml(o)}</span></div>`;
     }
     return `
-      <div class="field" data-field="${s.internal}">
-        <label>${escapeHtml(s.label)} ${isReq}</label>
-        <div class="ms-wrap" data-field="${s.internal}" data-none="${escapeHtml(noneLabel)}">
-          <div class="ms-control" tabindex="0">
-            <div class="ms-tags"><span class="ms-placeholder">— Sélectionnez —</span></div>
-          </div>
-          <div class="ms-dropdown">
-            <input type="text" class="ms-search" placeholder="Filtrer…">
-            <div class="ms-options">${opts}</div>
-          </div>
+      <div class="ms-wrap" data-field="${s.internal}" data-none="${escapeHtml(noneLabel)}">
+        <div class="ms-control" tabindex="0"><div class="ms-tags"><span class="ms-placeholder">— Sélectionnez —</span></div></div>
+        <div class="ms-dropdown">
+          <input type="text" class="ms-search" placeholder="Filtrer…">
+          <div class="ms-options">${opts}</div>
         </div>
-        ${currentArr.length ? `<div class="original" data-original="${escapeHtml(currentArr.join(';'))}">Valeur actuelle : ${escapeHtml(currentArr.join(', '))}</div>` : ''}
-        <div class="err-msg">Vous devez choisir au moins une option (cochez "${escapeHtml(noneLabel)}" si non applicable).</div>
       </div>
     `;
   }
@@ -622,119 +958,111 @@ function setupMultiSelect(wrap) {
   const search = wrap.querySelector('.ms-search');
   const options = wrap.querySelector('.ms-options');
   const field = wrap.dataset.field;
-  const noneLabel = wrap.dataset.none;
   
-  control.addEventListener('click', (e) => {
+  control.addEventListener('click', () => {
     document.querySelectorAll('.ms-dropdown.show').forEach(d => { if (d !== dropdown) d.classList.remove('show'); });
     dropdown.classList.toggle('show');
     if (dropdown.classList.contains('show')) search.focus();
   });
-  
-  document.addEventListener('click', (e) => {
-    if (!wrap.contains(e.target)) dropdown.classList.remove('show');
-  });
-  
+  document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) dropdown.classList.remove('show'); });
   search.addEventListener('input', () => {
     const q = search.value.toLowerCase();
-    options.querySelectorAll('.ms-option').forEach(opt => {
-      const txt = opt.textContent.toLowerCase();
-      opt.style.display = txt.includes(q) ? '' : 'none';
-    });
+    options.querySelectorAll('.ms-option').forEach(opt => { opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none'; });
   });
-  
   options.addEventListener('change', (e) => {
     if (e.target.type !== 'checkbox') return;
     const isNone = e.target.dataset.none === '1';
     if (isNone && e.target.checked) {
-      // Uncheck all others and disable
-      options.querySelectorAll('.ms-option:not(.none-option) input[type=checkbox]').forEach(cb => {
-        cb.checked = false;
-        cb.parentElement.classList.add('disabled');
-      });
-    } else if (isNone && !e.target.checked) {
+      options.querySelectorAll('.ms-option:not(.none-option) input').forEach(cb => { cb.checked = false; cb.parentElement.classList.add('disabled'); });
+    } else if (isNone) {
       options.querySelectorAll('.ms-option.disabled').forEach(o => o.classList.remove('disabled'));
     } else {
-      // Uncheck "none" if checking a real option
       options.querySelector('.ms-option.none-option input').checked = false;
       options.querySelectorAll('.ms-option.disabled').forEach(o => o.classList.remove('disabled'));
     }
     updateMsControl(wrap);
-    onFieldChange(wrap, field);
+    onEditChange(wrap, field);
   });
-  
-  // Initial state
   updateMsControl(wrap);
 }
 
 function updateMsControl(wrap) {
-  const control = wrap.querySelector('.ms-control .ms-tags');
+  const tags = wrap.querySelector('.ms-control .ms-tags');
   const options = wrap.querySelector('.ms-options');
   const noneLabel = wrap.dataset.none;
-  
   const noneCb = options.querySelector('.ms-option.none-option input');
   const checked = Array.from(options.querySelectorAll('.ms-option:not(.none-option) input:checked')).map(cb => cb.value);
   
-  let html = '';
-  if (noneCb.checked) {
-    html = `<span class="ms-tag none-tag">${escapeHtml(noneLabel)}</span>`;
-  } else if (checked.length) {
-    html = checked.map(v => `<span class="ms-tag">${escapeHtml(v)}</span>`).join('');
-  } else {
-    html = `<span class="ms-placeholder">— Sélectionnez —</span>`;
-  }
-  control.innerHTML = html;
+  if (noneCb.checked) tags.innerHTML = `<span class="ms-tag none-tag">${escapeHtml(noneLabel)}</span>`;
+  else if (checked.length) tags.innerHTML = checked.map(v => `<span class="ms-tag">${escapeHtml(v)}</span>`).join('');
+  else tags.innerHTML = `<span class="ms-placeholder">— Sélectionnez —</span>`;
 }
 
-function onFieldChange(el, internalName) {
-  const fieldDiv = el.closest('.field');
-  fieldDiv.classList.remove('error');
+function setFieldState(internal, state) {
+  const fieldDiv = document.querySelector(`.field[data-field="${internal}"]`);
+  if (!fieldDiv) return;
+  fieldStates[internal] = state;
+  fieldDiv.classList.remove('pending', 'confirmed', 'modified', 'error');
+  fieldDiv.classList.add(state);
   
-  // Mark "modified" indicator
-  const orig = fieldDiv.querySelector('.original');
-  if (orig) {
-    const originalVal = orig.dataset.original;
-    let currentVal;
-    if (el.classList && el.classList.contains('ms-wrap')) {
-      const opts = el.querySelector('.ms-options');
-      const noneCb = opts.querySelector('.ms-option.none-option input');
-      if (noneCb.checked) currentVal = '__NONE__';
-      else {
-        const arr = Array.from(opts.querySelectorAll('.ms-option:not(.none-option) input:checked')).map(c => c.value);
-        currentVal = arr.join(';');
-      }
-    } else {
-      currentVal = el.value;
-    }
-    if (currentVal != originalVal) {
-      orig.classList.add('modified');
-      orig.textContent = '⚠ Modifié — valeur d\'origine : ' + (originalVal.length > 60 ? originalVal.slice(0, 60) + '…' : originalVal);
-    } else {
-      orig.classList.remove('modified');
-      orig.textContent = 'Valeur actuelle : ' + (originalVal.length > 60 ? originalVal.slice(0, 60) + '…' : originalVal);
-    }
+  fieldDiv.querySelectorAll('.btn-action').forEach(b => b.classList.remove('active'));
+  fieldDiv.querySelector(`.btn-${state === 'confirmed' ? 'confirm' : 'modify'}`).classList.add('active');
+  
+  const statusBadge = fieldDiv.querySelector('.field-status');
+  statusBadge.classList.remove('pending', 'confirmed', 'modified');
+  statusBadge.classList.add(state);
+  statusBadge.textContent = state === 'confirmed' ? '✓ Confirmé' : '✏ Modifié';
+  
+  // If modified, focus the input
+  if (state === 'modified') {
+    setTimeout(() => {
+      const inp = fieldDiv.querySelector('.field-edit input[type=text], .field-edit input[type=number], .field-edit select, .field-edit .ms-control');
+      if (inp) inp.focus();
+    }, 100);
   }
+  
+  updateProgress();
+}
+
+function onEditChange(el, internal) {
+  const fieldDiv = document.querySelector(`.field[data-field="${internal}"]`);
+  fieldDiv.classList.remove('error');
+}
+
+function updateProgress() {
+  const total = Object.keys(fieldStates).length;
+  const done = Object.values(fieldStates).filter(s => s !== 'pending').length;
+  document.getElementById('progress-count').textContent = done;
+  document.getElementById('progress-total').textContent = total;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('btn-submit').disabled = done < total;
 }
 
 // === Validation & submission ===
-function validate() {
+function validateModified() {
   let ok = true;
-  for (const s of SCHEMA) {
-    if (s.internal === 'Title') continue;
-    const fieldDiv = document.querySelector(`.field[data-field="${s.internal}"]`);
+  for (const [internal, state] of Object.entries(fieldStates)) {
+    if (state !== 'modified') continue;
+    const fieldDiv = document.querySelector(`.field[data-field="${internal}"]`);
     if (!fieldDiv) continue;
     fieldDiv.classList.remove('error');
+    const sch = SCHEMA.find(s => s.internal === internal);
+    if (!sch) continue;
     
-    let value;
-    if (s.type === 'multichoice') {
+    let valid;
+    if (sch.type === 'multichoice') {
       const opts = fieldDiv.querySelectorAll('.ms-option input');
-      const checked = Array.from(opts).filter(c => c.checked);
-      value = checked.length > 0;
+      valid = Array.from(opts).some(c => c.checked);
     } else {
-      const inp = fieldDiv.querySelector('input, select');
-      value = inp && inp.value.toString().trim() !== '';
+      const inp = fieldDiv.querySelector('.field-edit input, .field-edit select');
+      valid = inp && inp.value.toString().trim() !== '';
     }
-    if (!value) {
+    if (!valid) {
       fieldDiv.classList.add('error');
+      fieldDiv.classList.remove('modified');
+      fieldDiv.classList.add('modified', 'error');
       ok = false;
     }
   }
@@ -742,51 +1070,56 @@ function validate() {
 }
 
 function collectValues() {
-  const out = { Title: selectedCabinet.Title, _isNew: selectedCabinet.Id === 'NEW', _Id: selectedCabinet.Id };
+  const out = { Title: selectedCabinet.Title, _Id: selectedCabinet.Id, _fieldStates: {...fieldStates} };
   for (const s of SCHEMA) {
     if (s.internal === 'Title') continue;
+    const state = fieldStates[s.internal];
     const fieldDiv = document.querySelector(`.field[data-field="${s.internal}"]`);
     if (!fieldDiv) continue;
-    if (s.type === 'multichoice') {
-      const opts = fieldDiv.querySelectorAll('.ms-option input');
-      const noneCb = fieldDiv.querySelector('.ms-option.none-option input');
-      if (noneCb.checked) {
-        out[s.internal] = ['__NONE__:' + (s.noneLabel || 'Aucun')];
+    
+    if (state === 'confirmed') {
+      out[s.internal] = getCurrentValue(s);
+    } else if (state === 'modified') {
+      if (s.type === 'multichoice') {
+        const opts = fieldDiv.querySelectorAll('.ms-option input');
+        const noneCb = fieldDiv.querySelector('.ms-option.none-option input');
+        if (noneCb.checked) out[s.internal] = ['__NONE__:' + (s.noneLabel || 'Aucun')];
+        else out[s.internal] = Array.from(opts).filter(c => c.checked && c.dataset.none !== '1').map(c => c.value);
       } else {
-        out[s.internal] = Array.from(opts).filter(c => c.checked && c.dataset.none !== '1').map(c => c.value);
+        const inp = fieldDiv.querySelector('.field-edit input, .field-edit select');
+        out[s.internal] = inp ? inp.value : '';
       }
-    } else {
-      const inp = fieldDiv.querySelector('input, select');
-      out[s.internal] = inp.value;
     }
   }
   return out;
 }
 
 function submitForm() {
-  if (!validate()) {
+  if (!validateModified()) {
     const firstErr = document.querySelector('.field.error');
     if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    alert('Veuillez remplir tous les champs obligatoires (en rouge).');
     return;
   }
   const data = collectValues();
   downloadCsv(data);
   document.getElementById('form-section').style.display = 'none';
+  document.getElementById('progress-wrap').classList.remove('show');
   document.getElementById('success-msg').style.display = 'block';
 }
 
 function downloadCsv(data) {
-  // CSV: 2 columns wide — Field, Value
-  const rows = [['_Cabinet', data.Title]];
-  rows.push(['_IsNew', data._isNew ? 'true' : 'false']);
-  rows.push(['_BackupId', data._Id || '']);
-  rows.push(['_Timestamp', new Date().toISOString()]);
+  const rows = [
+    ['_Cabinet', data.Title],
+    ['_BackupId', data._Id || ''],
+    ['_Timestamp', new Date().toISOString()]
+  ];
   for (const s of SCHEMA) {
     if (s.internal === 'Title') continue;
     let v = data[s.internal];
     if (Array.isArray(v)) v = v.join(';');
+    const state = data._fieldStates[s.internal] || 'unknown';
     rows.push([s.internal, v != null ? v : '']);
+    rows.push([`__state__${s.internal}`, state]);
     rows.push([`__label__${s.internal}`, s.label]);
   }
   const csv = rows.map(r => r.map(c => {
@@ -812,51 +1145,42 @@ function resetForm() {
   document.getElementById('cabinet-section').style.display = 'block';
   cabinetInput.value = '';
   selectedCabinet = null;
-  formValues = {};
+  fieldStates = {};
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// === Admin functions ===
 function exportSchema() {
   const blob = new Blob([JSON.stringify(SCHEMA, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'labosphere_schema.json';
-  a.click();
+  a.href = url; a.download = 'labosphere_schema.json'; a.click();
   URL.revokeObjectURL(url);
 }
-
 function importSchema() {
   const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = '.json';
+  inp.type = 'file'; inp.accept = '.json';
   inp.onchange = (e) => {
-    const file = e.target.files[0];
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const newSchema = JSON.parse(ev.target.result);
-        localStorage.setItem('labosphere_schema', JSON.stringify(newSchema));
+        const ns = JSON.parse(ev.target.result);
+        localStorage.setItem('labosphere_schema_v2', JSON.stringify(ns));
         location.reload();
-      } catch(err) { alert('Erreur : JSON invalide'); }
+      } catch(err) { alert('JSON invalide'); }
     };
-    reader.readAsText(file);
+    reader.readAsText(e.target.files[0]);
   };
   inp.click();
 }
-
 function resetSchema() {
-  if (!confirm('Réinitialiser le schéma aux valeurs par défaut ?')) return;
-  localStorage.removeItem('labosphere_schema');
+  if (!confirm('Réinitialiser le schéma ?')) return;
+  localStorage.removeItem('labosphere_schema_v2');
   location.reload();
 }
 
-// === Helpers ===
 function escapeHtml(s) {
   if (s == null) return '';
-  return s.toString().replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+  return s.toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 </script>
 
