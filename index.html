@@ -1041,6 +1041,7 @@ body {
   <div id="admin-panel">
     <div class="admin-tabs">
       <button class="tab active" data-tab="cabinets" onclick="switchTab('cabinets')">📋 Cabinets &amp; liens</button>
+      <button class="tab" data-tab="responses" onclick="switchTab('responses')">📩 Réponses reçues <span id="responses-count" style="background:var(--primary);color:white;padding:1px 7px;border-radius:100px;font-size:10px;margin-left:4px;display:none;">0</span></button>
       <button class="tab" data-tab="schema" onclick="switchTab('schema')">⚙️ Éditeur du formulaire</button>
       <button class="tab" data-tab="preview" onclick="switchTab('preview')">👁 Aperçu du formulaire</button>
     </div>
@@ -1061,6 +1062,35 @@ body {
           <thead><tr><th>Cabinet</th><th>Offre</th><th>Lien personnalisé</th><th></th></tr></thead>
           <tbody id="cabinets-tbody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Tab : Responses received -->
+    <div class="admin-content" id="tab-responses">
+      <div id="responses-auth" style="text-align:center; padding:32px; background:white; border:1px dashed var(--gray-300); border-radius:var(--radius-md);">
+        <div style="font-size:36px; margin-bottom:8px;">🔑</div>
+        <p style="margin-bottom:14px; color:var(--gray-700); font-size:14px;">Entrez la clé admin pour accéder aux réponses reçues.</p>
+        <input type="password" id="admin-secret-input" placeholder="Clé admin…" style="padding:10px 14px; border:2px solid var(--gray-200); border-radius:var(--radius-sm); font-size:14px; font-family:inherit; min-width:280px; margin-right:8px;">
+        <button class="btn-action-admin" onclick="loginAdminResponses()">Valider</button>
+      </div>
+      <div id="responses-loaded" style="display:none;">
+        <div class="dashboard-stats" id="responses-stats"></div>
+        <div class="dashboard-toolbar">
+          <input type="text" id="filter-responses" placeholder="Filtrer par cabinet…" oninput="renderResponses()">
+          <select id="filter-resp-status" onchange="renderResponses()">
+            <option value="">Toutes</option>
+            <option value="done">✅ Soumises</option>
+            <option value="pending">⏳ Non soumises</option>
+          </select>
+          <button class="btn-action-admin" onclick="refreshResponses()">🔄 Actualiser</button>
+          <button class="btn-action-admin" onclick="logoutAdminResponses()" style="background:#c8102e;">↩ Se déconnecter</button>
+        </div>
+        <div class="cabinets-table-wrap">
+          <table class="cabinets-table">
+            <thead><tr><th>Cabinet</th><th>Offre</th><th>Statut</th><th>Soumis le</th><th></th></tr></thead>
+            <tbody id="responses-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -1502,17 +1532,50 @@ function collectValues() {
   return out;
 }
 
-function submitForm() {
+async function submitForm() {
   if (!validateModified()) {
     const firstErr = document.querySelector('.field.error');
     if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
   const data = collectValues();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = '⏳ Envoi en cours…';
+
+  // Always download CSV as backup
   downloadCsv(data);
+
+  // Send to backend for tracking (best-effort, doesn't block UI)
+  const payload = {
+    cabinetId: selectedCabinet.Id,
+    cabinetTitle: selectedCabinet.Title,
+    token: selectedCabinet._token,
+    data: data,
+    fieldStates: data._fieldStates,
+    timestamp: new Date().toISOString()
+  };
+  let serverOk = false;
+  try {
+    const r = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    serverOk = r.ok;
+  } catch (e) {
+    serverOk = false;
+  }
+
   document.getElementById('form-section').style.display = 'none';
   document.getElementById('progress-wrap').classList.remove('show');
-  document.getElementById('success-msg').style.display = 'block';
+  const sm = document.getElementById('success-msg');
+  if (!serverOk) {
+    sm.querySelector('p').innerHTML = '⚠️ Votre réponse n\'a pas pu être envoyée automatiquement à l\'administrateur — mais le CSV est téléchargé. <br>Merci de l\'envoyer par mail à l\'administrateur Labosphère.';
+  }
+  sm.style.display = 'block';
+  btn.disabled = false;
+  btn.innerHTML = '📥 Valider & télécharger CSV';
 }
 
 function downloadCsv(data) {
@@ -1639,6 +1702,8 @@ function initAdmin() {
   renderCabinetsTable();
   renderSchemaEditor();
   setupPreviewSearch();
+  // Pre-load count if already authed
+  if (getAdminSecret()) refreshResponses();
 }
 
 function switchTab(name) {
@@ -1648,6 +1713,9 @@ function switchTab(name) {
   // If switching away from preview, hide the form card
   if (name !== 'preview') {
     document.querySelector('.card').style.display = 'none';
+  }
+  if (name === 'responses') {
+    if (getAdminSecret()) refreshResponses();
   }
 }
 
@@ -1876,6 +1944,208 @@ function adminSelectCabinet(id) {
   selectCabinet(id);
   // Keep admin panel visible above
   document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+}
+
+// === Responses tab (admin) ===
+let SUBMISSIONS = null; // cached fetched submissions
+
+function getAdminSecret() {
+  return localStorage.getItem('labosphere_admin_secret') || '';
+}
+
+async function loginAdminResponses() {
+  const secret = document.getElementById('admin-secret-input').value.trim();
+  if (!secret) return;
+  localStorage.setItem('labosphere_admin_secret', secret);
+  document.getElementById('admin-secret-input').value = '';
+  await refreshResponses();
+}
+
+function logoutAdminResponses() {
+  localStorage.removeItem('labosphere_admin_secret');
+  SUBMISSIONS = null;
+  document.getElementById('responses-loaded').style.display = 'none';
+  document.getElementById('responses-auth').style.display = '';
+}
+
+async function refreshResponses() {
+  const secret = getAdminSecret();
+  if (!secret) {
+    document.getElementById('responses-auth').style.display = '';
+    document.getElementById('responses-loaded').style.display = 'none';
+    return;
+  }
+  try {
+    const r = await fetch('/api/submissions', {
+      headers: { 'Authorization': `Bearer ${secret}` }
+    });
+    if (r.status === 401) {
+      toast('Clé admin invalide', false);
+      logoutAdminResponses();
+      return;
+    }
+    if (!r.ok) {
+      toast('Erreur serveur', false);
+      return;
+    }
+    const j = await r.json();
+    SUBMISSIONS = j.submissions || [];
+    document.getElementById('responses-auth').style.display = 'none';
+    document.getElementById('responses-loaded').style.display = '';
+    renderResponseStats();
+    renderResponses();
+    const c = document.getElementById('responses-count');
+    c.textContent = SUBMISSIONS.length;
+    c.style.display = SUBMISSIONS.length ? '' : 'none';
+  } catch (e) {
+    toast('Erreur réseau', false);
+  }
+}
+
+function renderResponseStats() {
+  if (!SUBMISSIONS) return;
+  const total = CABINETS.length;
+  const submittedIds = new Set(SUBMISSIONS.map(s => s.cabinetId));
+  const done = submittedIds.size;
+  const pending = total - done;
+  const pct = total === 0 ? 0 : Math.round(done / total * 100);
+  document.getElementById('responses-stats').innerHTML = `
+    <div class="stat"><span class="stat-num">${done}</span><span class="stat-label">Soumis (${pct}%)</span></div>
+    <div class="stat"><span class="stat-num">${pending}</span><span class="stat-label">En attente</span></div>
+    <div class="stat"><span class="stat-num">${total}</span><span class="stat-label">Total cabinets</span></div>
+    <div class="stat"><span class="stat-num">${SUBMISSIONS.length}</span><span class="stat-label">Soumissions totales</span></div>
+  `;
+}
+
+function renderResponses() {
+  if (!SUBMISSIONS) return;
+  const filter = (document.getElementById('filter-responses').value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('filter-resp-status').value;
+
+  // Group by cabinetId, keeping latest
+  const latestById = new Map();
+  for (const s of SUBMISSIONS) {
+    const cur = latestById.get(s.cabinetId);
+    if (!cur || new Date(s.submittedAt) > new Date(cur.submittedAt)) {
+      latestById.set(s.cabinetId, s);
+    }
+  }
+
+  let rows = CABINETS.map(c => {
+    const sub = latestById.get(c.Id);
+    return { cabinet: c, sub };
+  });
+  if (filter) rows = rows.filter(r => (r.cabinet.Title || '').toLowerCase().includes(filter));
+  if (statusFilter === 'done') rows = rows.filter(r => r.sub);
+  else if (statusFilter === 'pending') rows = rows.filter(r => !r.sub);
+  rows.sort((a, b) => {
+    // Submitted first, then alphabetical
+    if (!!a.sub !== !!b.sub) return a.sub ? -1 : 1;
+    if (a.sub && b.sub) return new Date(b.sub.submittedAt) - new Date(a.sub.submittedAt);
+    return (a.cabinet.Title || '').localeCompare(b.cabinet.Title || '');
+  });
+
+  const tbody = document.getElementById('responses-tbody');
+  tbody.innerHTML = rows.map(r => {
+    const c = r.cabinet;
+    const offreClass = c.OFFRE && c.OFFRE.replace(/[^A-Z0-9]/gi, '');
+    const offreTag = c.OFFRE ? `<span class="offre-tag ${escapeHtml(offreClass)}">${escapeHtml(c.OFFRE)}</span>` : '<span style="color:var(--gray-500);font-size:11px;">—</span>';
+    if (r.sub) {
+      const dt = new Date(r.sub.submittedAt);
+      const fr = dt.toLocaleDateString('fr-FR') + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      return `<tr>
+        <td class="name">${escapeHtml(c.Title || '(sans nom)')}</td>
+        <td>${offreTag}</td>
+        <td><span style="color:var(--success-dark);font-weight:700;font-size:12px;">✅ Soumis</span></td>
+        <td style="font-size:12px;color:var(--gray-700);">${fr}</td>
+        <td class="actions-cell">
+          <button class="btn-mini" onclick="showSubmissionDetail(${c.Id})">📄 Voir</button>
+          <button class="btn-mini" onclick="downloadSubmissionCsv(${c.Id})">📥 CSV</button>
+        </td>
+      </tr>`;
+    } else {
+      return `<tr>
+        <td class="name" style="color:var(--gray-700);">${escapeHtml(c.Title || '(sans nom)')}</td>
+        <td>${offreTag}</td>
+        <td><span style="color:var(--warning-dark);font-weight:700;font-size:12px;">⏳ Non soumis</span></td>
+        <td style="font-size:12px;color:var(--gray-500);">—</td>
+        <td class="actions-cell">
+          <button class="btn-mini" onclick="copyUrl(this, '${location.origin + location.pathname.replace(/index\.html$/, '')}?c=${c.Id}&t=${c._token}')">📋 Lien</button>
+        </td>
+      </tr>`;
+    }
+  }).join('');
+  if (!rows.length) tbody.innerHTML = '<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--gray-500);">Aucun cabinet ne correspond.</td></tr>';
+}
+
+function showSubmissionDetail(cabinetId) {
+  const sub = SUBMISSIONS.filter(s => s.cabinetId === cabinetId).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
+  if (!sub) return;
+  const c = CABINETS.find(x => x.Id === cabinetId);
+  let html = `<h3 style="margin-bottom:12px;">${escapeHtml(c.Title)}</h3>`;
+  html += `<p style="font-size:12px;color:var(--gray-500);margin-bottom:16px;">Soumis le ${new Date(sub.submittedAt).toLocaleString('fr-FR')}</p>`;
+  html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+  for (const s of SCHEMA) {
+    if (s.internal === 'Title') continue;
+    let v = sub.data?.[s.internal];
+    const state = sub.fieldStates?.[s.internal] || sub.data?._fieldStates?.[s.internal];
+    const stateBadge = state === 'confirmed' ? '<span style="color:var(--success-dark);font-size:10px;font-weight:700;">✓ CONFIRMÉ</span>' : state === 'modified' ? '<span style="color:var(--warning-dark);font-size:10px;font-weight:700;">✏ MODIFIÉ</span>' : '';
+    if (Array.isArray(v)) v = v.join(', ');
+    if (v == null) v = '<em style="color:var(--gray-500);">—</em>';
+    else v = escapeHtml(v.toString());
+    html += `<tr style="border-bottom:1px solid var(--gray-100);"><td style="padding:8px 12px;font-weight:600;width:35%;">${escapeHtml(s.label)} <br>${stateBadge}</td><td style="padding:8px 12px;">${v}</td></tr>`;
+  }
+  html += '</table>';
+  html += `<div style="text-align:right;margin-top:16px;"><a href="${escapeHtml(sub.url)}" target="_blank" style="font-size:12px;color:var(--gray-500);">Voir sur GitHub →</a></div>`;
+  showModal(html);
+}
+
+function downloadSubmissionCsv(cabinetId) {
+  const sub = SUBMISSIONS.filter(s => s.cabinetId === cabinetId).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
+  if (!sub) return;
+  const c = CABINETS.find(x => x.Id === cabinetId);
+  const rows = [
+    ['_Cabinet', c.Title],
+    ['_BackupId', cabinetId],
+    ['_Timestamp', sub.submittedAt]
+  ];
+  for (const s of SCHEMA) {
+    if (s.internal === 'Title') continue;
+    let v = sub.data?.[s.internal];
+    if (Array.isArray(v)) v = v.join(';');
+    const state = sub.fieldStates?.[s.internal] || 'unknown';
+    rows.push([s.internal, v != null ? v : '']);
+    rows.push([`__state__${s.internal}`, state]);
+    rows.push([`__label__${s.internal}`, s.label]);
+  }
+  const csv = rows.map(r => r.map(c => {
+    const s = c == null ? '' : c.toString();
+    return /[";\n,]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(';')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (c.Title || 'cabinet').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+  a.download = `submission_${safeName}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function showModal(html) {
+  let m = document.getElementById('modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    m.onclick = (e) => { if (e.target === m) m.remove(); };
+    document.body.appendChild(m);
+  }
+  m.innerHTML = `<div style="background:white;border-radius:12px;padding:28px;max-width:680px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <button onclick="document.getElementById('modal').remove()" style="float:right;background:transparent;border:none;font-size:20px;cursor:pointer;color:var(--gray-500);">×</button>
+    ${html}
+  </div>`;
+  m.onclick = (e) => { if (e.target === m) m.remove(); };
 }
 
 function toast(msg, success) {
