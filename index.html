@@ -338,6 +338,38 @@ body {
 .field-status.pending { background: var(--gray-100); color: var(--gray-500); }
 .field-status.confirmed { background: var(--success); color: white; }
 .field-status.modified { background: var(--warning); color: white; }
+.field-status.locked { background: var(--gray-900); color: white; }
+.field.locked {
+  background: var(--gray-50);
+  border-color: var(--gray-200);
+  border-style: dashed;
+}
+
+/* "Autre" option styling */
+.ms-option.other-option {
+  background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+  color: #4338ca;
+  font-weight: 600;
+  border-top: 2px solid #c7d2fe;
+}
+.ms-other-wrap {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+  border-radius: var(--radius-sm);
+}
+.ms-other-wrap .ms-other-input {
+  width: 100%;
+  border: 1px solid #c7d2fe;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: white;
+}
+.ms-other-wrap .ms-other-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+.ms-tag.other-tag { background: #6366f1; }
 
 .field-current-value {
   font-size: 14px;
@@ -1303,14 +1335,15 @@ function renderForm() {
   for (const [title, list] of Object.entries(groups)) {
     html += `<div class="section-title"><span>${title}</span><span class="section-count">${list.length}</span></div>`;
     for (const s of list) {
-      fieldStates[s.internal] = 'pending';
+      // OFFRE: read-only, excluded from validation/progress
+      if (s.internal !== 'OFFRE') fieldStates[s.internal] = 'pending';
       html += renderField(s);
     }
   }
   form.innerHTML = html;
-  
+
   document.querySelectorAll('.ms-wrap').forEach(setupMultiSelect);
-  document.getElementById('progress-total').textContent = fields.length;
+  document.getElementById('progress-total').textContent = Object.keys(fieldStates).length;
   updateProgress();
 }
 
@@ -1335,8 +1368,21 @@ function formatCurrentDisplay(field, value) {
 function renderField(s) {
   const current = getCurrentValue(s);
   const display = formatCurrentDisplay(s, current);
+
+  // OFFRE = read-only, no buttons, no validation needed
+  if (s.internal === 'OFFRE') {
+    return `
+      <div class="field locked" data-field="${s.internal}">
+        <div class="field-head">
+          <div class="field-label">${escapeHtml(s.label)}</div>
+          <span class="field-status locked">🔒 Non modifiable</span>
+        </div>
+        ${display}
+      </div>
+    `;
+  }
+
   const editForm = renderEditForm(s, current);
-  
   return `
     <div class="field pending" data-field="${s.internal}">
       <div class="field-head">
@@ -1377,12 +1423,17 @@ function renderEditForm(s, current) {
       const checked = currentArr.includes(o);
       opts += `<div class="ms-option"><input type="checkbox" value="${escapeHtml(o)}" ${checked ? 'checked' : ''}> <span>${escapeHtml(o)}</span></div>`;
     }
+    // "Autre" option appended at the end
+    opts += `<div class="ms-option other-option"><input type="checkbox" data-other="1"> <span>+ Autre <em style="font-weight:400;opacity:0.7;font-size:11px;">(préciser ci-dessous)</em></span></div>`;
     return `
       <div class="ms-wrap" data-field="${s.internal}" data-none="${escapeHtml(noneLabel)}">
         <div class="ms-control" tabindex="0"><div class="ms-tags"><span class="ms-placeholder">— Sélectionnez —</span></div></div>
         <div class="ms-dropdown">
           <input type="text" class="ms-search" placeholder="Filtrer…">
           <div class="ms-options">${opts}</div>
+        </div>
+        <div class="ms-other-wrap" style="display:none;">
+          <input type="text" class="ms-other-input" placeholder="Précisez (optionnel) — laissez vide si vous voulez juste indiquer 'Autre'">
         </div>
       </div>
     `;
@@ -1395,9 +1446,12 @@ function setupMultiSelect(wrap) {
   const dropdown = wrap.querySelector('.ms-dropdown');
   const search = wrap.querySelector('.ms-search');
   const options = wrap.querySelector('.ms-options');
+  const otherWrap = wrap.querySelector('.ms-other-wrap');
+  const otherInput = wrap.querySelector('.ms-other-input');
   const field = wrap.dataset.field;
-  
-  control.addEventListener('click', () => {
+
+  control.addEventListener('click', (e) => {
+    if (e.target.closest('.ms-other-wrap')) return; // clicks in "Autre" input shouldn't toggle
     document.querySelectorAll('.ms-dropdown.show').forEach(d => { if (d !== dropdown) d.classList.remove('show'); });
     dropdown.classList.toggle('show');
     if (dropdown.classList.contains('show')) search.focus();
@@ -1410,17 +1464,31 @@ function setupMultiSelect(wrap) {
   options.addEventListener('change', (e) => {
     if (e.target.type !== 'checkbox') return;
     const isNone = e.target.dataset.none === '1';
+    const isOther = e.target.dataset.other === '1';
     if (isNone && e.target.checked) {
+      // None checked → uncheck and disable everything else
       options.querySelectorAll('.ms-option:not(.none-option) input').forEach(cb => { cb.checked = false; cb.parentElement.classList.add('disabled'); });
+      if (otherWrap) otherWrap.style.display = 'none';
     } else if (isNone) {
+      // None unchecked → re-enable
       options.querySelectorAll('.ms-option.disabled').forEach(o => o.classList.remove('disabled'));
     } else {
-      options.querySelector('.ms-option.none-option input').checked = false;
+      // Any other option → uncheck None
+      const noneCb = options.querySelector('.ms-option.none-option input');
+      if (noneCb) noneCb.checked = false;
       options.querySelectorAll('.ms-option.disabled').forEach(o => o.classList.remove('disabled'));
+      if (isOther && otherWrap) {
+        otherWrap.style.display = e.target.checked ? '' : 'none';
+        if (e.target.checked && otherInput) setTimeout(() => otherInput.focus(), 50);
+      }
     }
     updateMsControl(wrap);
     onEditChange(wrap, field);
   });
+  // "Autre" text input live update
+  if (otherInput) {
+    otherInput.addEventListener('input', () => { updateMsControl(wrap); });
+  }
   updateMsControl(wrap);
 }
 
@@ -1429,10 +1497,24 @@ function updateMsControl(wrap) {
   const options = wrap.querySelector('.ms-options');
   const noneLabel = wrap.dataset.none;
   const noneCb = options.querySelector('.ms-option.none-option input');
-  const checked = Array.from(options.querySelectorAll('.ms-option:not(.none-option) input:checked')).map(cb => cb.value);
-  
-  if (noneCb.checked) tags.innerHTML = `<span class="ms-tag none-tag">${escapeHtml(noneLabel)}</span>`;
-  else if (checked.length) tags.innerHTML = checked.map(v => `<span class="ms-tag">${escapeHtml(v)}</span>`).join('');
+  const otherCb = options.querySelector('.ms-option.other-option input');
+  const otherInput = wrap.querySelector('.ms-other-input');
+  // Filter out None + Other
+  const checked = Array.from(options.querySelectorAll('.ms-option input:checked'))
+    .filter(cb => cb.dataset.none !== '1' && cb.dataset.other !== '1')
+    .map(cb => cb.value);
+
+  if (noneCb && noneCb.checked) {
+    tags.innerHTML = `<span class="ms-tag none-tag">${escapeHtml(noneLabel)}</span>`;
+    return;
+  }
+  const parts = checked.map(v => `<span class="ms-tag">${escapeHtml(v)}</span>`);
+  if (otherCb && otherCb.checked) {
+    const txt = (otherInput?.value || '').trim();
+    const label = txt ? `Autre : ${txt}` : 'Autre';
+    parts.push(`<span class="ms-tag other-tag">${escapeHtml(label)}</span>`);
+  }
+  if (parts.length) tags.innerHTML = parts.join('');
   else tags.innerHTML = `<span class="ms-placeholder">— Sélectionnez —</span>`;
 }
 
@@ -1492,6 +1574,7 @@ function validateModified() {
     let valid;
     if (sch.type === 'multichoice') {
       const opts = fieldDiv.querySelectorAll('.ms-option input');
+      // Au moins une option cochée (None, Autre — avec ou sans texte — ou une option normale)
       valid = Array.from(opts).some(c => c.checked);
     } else {
       const inp = fieldDiv.querySelector('.field-edit input, .field-edit select');
@@ -1509,20 +1592,36 @@ function validateModified() {
 
 function collectValues() {
   const out = { Title: selectedCabinet.Title, _Id: selectedCabinet.Id, _fieldStates: {...fieldStates} };
+  // OFFRE is locked → always send the source value
+  const offreSchema = SCHEMA.find(x => x.internal === 'OFFRE');
+  if (offreSchema) out.OFFRE = getCurrentValue(offreSchema);
+
   for (const s of SCHEMA) {
-    if (s.internal === 'Title') continue;
+    if (s.internal === 'Title' || s.internal === 'OFFRE') continue;
     const state = fieldStates[s.internal];
     const fieldDiv = document.querySelector(`.field[data-field="${s.internal}"]`);
     if (!fieldDiv) continue;
-    
+
     if (state === 'confirmed') {
       out[s.internal] = getCurrentValue(s);
     } else if (state === 'modified') {
       if (s.type === 'multichoice') {
         const opts = fieldDiv.querySelectorAll('.ms-option input');
         const noneCb = fieldDiv.querySelector('.ms-option.none-option input');
-        if (noneCb.checked) out[s.internal] = ['__NONE__:' + (s.noneLabel || 'Aucun')];
-        else out[s.internal] = Array.from(opts).filter(c => c.checked && c.dataset.none !== '1').map(c => c.value);
+        const otherCb = fieldDiv.querySelector('.ms-option.other-option input');
+        const otherInput = fieldDiv.querySelector('.ms-other-input');
+        if (noneCb && noneCb.checked) {
+          out[s.internal] = ['__NONE__:' + (s.noneLabel || 'Aucun')];
+        } else {
+          const vals = Array.from(opts)
+            .filter(c => c.checked && c.dataset.none !== '1' && c.dataset.other !== '1')
+            .map(c => c.value);
+          if (otherCb && otherCb.checked) {
+            const txt = (otherInput?.value || '').trim();
+            vals.push(txt ? `__OTHER__:${txt}` : '__OTHER__:');
+          }
+          out[s.internal] = vals;
+        }
       } else {
         const inp = fieldDiv.querySelector('.field-edit input, .field-edit select');
         out[s.internal] = inp ? inp.value : '';
