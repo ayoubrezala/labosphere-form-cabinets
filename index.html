@@ -666,6 +666,358 @@ body {
   .submit-row { flex-direction: column; align-items: stretch; }
   .btn-primary { justify-content: center; }
 }
+
+/* === Admin panel === */
+#admin-panel { display: none; }
+#admin-panel.show { display: block; }
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  background: white;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.admin-tabs .tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--gray-500);
+  transition: all 0.15s;
+}
+.admin-tabs .tab:hover { background: var(--gray-50); color: var(--gray-900); }
+.admin-tabs .tab.active {
+  background: var(--gray-900);
+  color: white;
+}
+.admin-content { display: none; }
+.admin-content.show { display: block; animation: fadeIn 0.2s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Cabinets table */
+.dashboard-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.dashboard-toolbar input,
+.dashboard-toolbar select {
+  padding: 10px 14px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  background: white;
+}
+.dashboard-toolbar input:focus, .dashboard-toolbar select:focus {
+  outline: none; border-color: var(--gray-700);
+}
+.dashboard-toolbar input { flex: 1; min-width: 200px; }
+.dashboard-toolbar .btn-action-admin {
+  padding: 10px 16px;
+  background: var(--gray-900);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.dashboard-toolbar .btn-action-admin:hover { background: var(--gray-700); transform: translateY(-1px); }
+.dashboard-stats {
+  background: linear-gradient(135deg, var(--gray-900), #1e3a5f);
+  color: white;
+  padding: 18px 22px;
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.dashboard-stats .stat { display: flex; flex-direction: column; gap: 4px; }
+.dashboard-stats .stat-num { font-size: 24px; font-weight: 800; line-height: 1; }
+.dashboard-stats .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+
+.cabinets-table-wrap {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.cabinets-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cabinets-table thead { background: var(--gray-50); }
+.cabinets-table th {
+  text-align: left;
+  padding: 12px 14px;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-700);
+  border-bottom: 1px solid var(--gray-200);
+}
+.cabinets-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+}
+.cabinets-table tbody tr:hover { background: var(--gray-50); }
+.cabinets-table .name { font-weight: 600; color: var(--gray-900); }
+.cabinets-table .offre-tag {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.3px;
+}
+.cabinets-table .offre-tag.ECO { background: #16a34a; }
+.cabinets-table .offre-tag.O2LAB { background: #2563eb; }
+.cabinets-table .url-cell {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px;
+  color: var(--gray-500);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cabinets-table .actions-cell { white-space: nowrap; text-align: right; }
+.cabinets-table .btn-mini {
+  background: white;
+  border: 1px solid var(--gray-200);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--gray-700);
+  margin-left: 4px;
+  transition: all 0.1s;
+}
+.cabinets-table .btn-mini:hover { background: var(--gray-100); border-color: var(--gray-300); }
+.cabinets-table .btn-mini.btn-copy.copied { background: var(--success); color: white; border-color: var(--success); }
+
+/* Schema editor */
+.schema-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--gray-100);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+}
+.schema-toolbar .info {
+  flex: 1;
+  font-size: 12px;
+  color: var(--gray-700);
+  font-weight: 500;
+}
+.schema-fields-list { display: flex; flex-direction: column; gap: 10px; }
+.schema-field-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: all 0.15s;
+}
+.schema-field-card:hover { border-color: var(--gray-300); box-shadow: var(--shadow-sm); }
+.schema-field-card.hidden-field { opacity: 0.5; background: var(--gray-50); }
+.schema-field-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.schema-field-head .drag-handle {
+  cursor: grab;
+  color: var(--gray-500);
+  font-size: 18px;
+  user-select: none;
+}
+.schema-field-head input.schema-label-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+}
+.schema-field-head input.schema-label-input:focus { outline: none; border-color: var(--primary); }
+.schema-field-head .type-badge {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.schema-field-head .btn-icon {
+  background: white;
+  border: 1px solid var(--gray-200);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--gray-700);
+  font-weight: 600;
+}
+.schema-field-head .btn-icon:hover { background: var(--gray-50); }
+.schema-field-head .btn-icon.btn-del:hover { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+.schema-field-head .internal-name {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--gray-500);
+  background: var(--gray-50);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.schema-field-body { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--gray-200); }
+.schema-field-body .body-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.schema-field-body label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  min-width: 90px;
+}
+.schema-field-body input[type=text] {
+  flex: 1;
+  min-width: 200px;
+  padding: 7px 11px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+}
+.schema-field-body input[type=text]:focus { outline: none; border-color: var(--primary); }
+.schema-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: var(--gray-50);
+  border: 1px dashed var(--gray-200);
+  border-radius: var(--radius-sm);
+  margin-top: 6px;
+}
+.choice-chip {
+  background: white;
+  border: 1px solid var(--gray-200);
+  padding: 4px 8px 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.choice-chip .del-choice {
+  background: var(--gray-200);
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-700);
+}
+.choice-chip .del-choice:hover { background: #fca5a5; color: white; }
+.add-choice-input {
+  border: none;
+  background: transparent;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  min-width: 100px;
+  font-style: italic;
+  color: var(--gray-700);
+}
+.add-choice-input:focus { outline: none; }
+.schema-save-bar {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 2px dashed var(--gray-200);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.schema-save-bar .save-msg {
+  flex: 1;
+  font-size: 12px;
+  color: var(--success-dark);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-save-schema {
+  background: linear-gradient(135deg, var(--success), var(--success-dark));
+  color: white;
+  border: none;
+  padding: 12px 22px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+.btn-save-schema:hover { transform: translateY(-1px); }
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--gray-900);
+  color: white;
+  padding: 14px 22px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 200;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.success { background: var(--success); }
+
+@media (max-width: 600px) {
+  .cabinets-table .url-cell { max-width: 140px; }
+  .admin-tabs { flex-direction: column; }
+  .dashboard-stats { gap: 16px; }
+}
 </style>
 </head>
 <body>
@@ -678,11 +1030,64 @@ body {
   </div>
   
   <div class="admin-toolbar" id="admin-toolbar">
-    <span><strong>Mode admin</strong> · Modifiez le schéma ci-dessous</span>
+    <span>🔐 <strong>Espace admin</strong> · accès complet</span>
     <div class="actions">
-      <button onclick="exportSchema()">Exporter</button>
-      <button onclick="importSchema()">Importer</button>
-      <button onclick="resetSchema()">Réinitialiser</button>
+      <button onclick="exportSchema()">📤 Exporter schéma</button>
+      <button onclick="importSchema()">📥 Importer schéma</button>
+      <button onclick="resetSchema()">↺ Réinitialiser</button>
+    </div>
+  </div>
+
+  <div id="admin-panel">
+    <div class="admin-tabs">
+      <button class="tab active" data-tab="cabinets" onclick="switchTab('cabinets')">📋 Cabinets &amp; liens</button>
+      <button class="tab" data-tab="schema" onclick="switchTab('schema')">⚙️ Éditeur du formulaire</button>
+      <button class="tab" data-tab="preview" onclick="switchTab('preview')">👁 Aperçu du formulaire</button>
+    </div>
+
+    <!-- Tab : Cabinets -->
+    <div class="admin-content show" id="tab-cabinets">
+      <div class="dashboard-stats" id="dashboard-stats"></div>
+      <div class="dashboard-toolbar">
+        <input type="text" id="filter-cabinets" placeholder="Filtrer par nom, SIRET, adresse…" oninput="renderCabinetsTable()">
+        <select id="filter-offre" onchange="renderCabinetsTable()">
+          <option value="">Toutes offres</option>
+        </select>
+        <button class="btn-action-admin" onclick="exportLinksCsv()">📥 Exporter CSV des liens</button>
+        <button class="btn-action-admin" onclick="copyAllLinks()">📋 Copier tous les liens</button>
+      </div>
+      <div class="cabinets-table-wrap">
+        <table class="cabinets-table">
+          <thead><tr><th>Cabinet</th><th>Offre</th><th>Lien personnalisé</th><th></th></tr></thead>
+          <tbody id="cabinets-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab : Schema editor -->
+    <div class="admin-content" id="tab-schema">
+      <div class="schema-toolbar">
+        <div class="info">💡 Modifiez les libellés, ajoutez/supprimez des options, masquez ou supprimez un champ. Sauvegardez ensuite — la modif sera visible pour tous les utilisateurs après redéploiement (ou en local pour test).</div>
+      </div>
+      <div class="schema-fields-list" id="schema-fields-list"></div>
+      <div class="schema-save-bar">
+        <span class="save-msg" id="schema-save-msg"></span>
+        <button class="btn-action-admin" onclick="downloadSchema()">📥 Télécharger le schéma</button>
+        <button class="btn-save-schema" onclick="saveSchema()">💾 Sauvegarder</button>
+      </div>
+    </div>
+
+    <!-- Tab : Preview (renders inside its own card) -->
+    <div class="admin-content" id="tab-preview">
+      <div style="background:white;border-radius:var(--radius-md);padding:24px;border:1px solid var(--gray-200);">
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px;font-weight:500;">Mode aperçu : recherche libre comme en accès direct, pour tester le formulaire.</p>
+        <div id="preview-cabinet-section">
+          <div class="cabinet-search-wrap">
+            <input type="text" id="cabinet-input-preview" placeholder="Rechercher un cabinet pour aperçu… (ex. copil)" autocomplete="off">
+            <div class="cabinet-suggestions" id="cabinet-suggestions-preview"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -1201,23 +1606,288 @@ function showInvalidLink() {
 }
 
 function tryAutoLoad() {
+  if (IS_ADMIN) {
+    document.getElementById('admin-panel').classList.add('show');
+    document.querySelector('.card').style.display = 'none';
+    initAdmin();
+    return;
+  }
   if (URL_CABINET_ID && URL_TOKEN) {
     const c = CABINETS.find(x => String(x.Id) === String(URL_CABINET_ID));
     if (c && c._token === URL_TOKEN) {
-      // Valid link — load cabinet, hide change link
       selectCabinet(c.Id);
       const cl = document.querySelector('.cabinet-info .change-link');
       if (cl) cl.style.display = 'none';
       return;
     }
-    // Invalid token
     showInvalidLink();
     return;
   }
-  // No URL params: only admin mode is allowed to search
-  if (!IS_ADMIN) {
-    showInvalidLink();
+  showInvalidLink();
+}
+
+// === ADMIN MODE ===
+function initAdmin() {
+  const offreSelect = document.getElementById('filter-offre');
+  const offres = [...new Set(CABINETS.map(c => c.OFFRE).filter(Boolean))].sort();
+  for (const o of offres) {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    offreSelect.appendChild(opt);
   }
+  renderDashboardStats();
+  renderCabinetsTable();
+  renderSchemaEditor();
+  setupPreviewSearch();
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.admin-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.admin-content').forEach(c => c.classList.remove('show'));
+  document.getElementById('tab-' + name).classList.add('show');
+  // If switching away from preview, hide the form card
+  if (name !== 'preview') {
+    document.querySelector('.card').style.display = 'none';
+  }
+}
+
+function renderDashboardStats() {
+  const total = CABINETS.length;
+  const byOffre = {};
+  for (const c of CABINETS) {
+    const k = c.OFFRE || '(vide)';
+    byOffre[k] = (byOffre[k] || 0) + 1;
+  }
+  let html = `<div class="stat"><span class="stat-num">${total}</span><span class="stat-label">Cabinets total</span></div>`;
+  for (const [o, n] of Object.entries(byOffre).sort((a,b) => b[1]-a[1])) {
+    html += `<div class="stat"><span class="stat-num">${n}</span><span class="stat-label">${escapeHtml(o)}</span></div>`;
+  }
+  document.getElementById('dashboard-stats').innerHTML = html;
+}
+
+function renderCabinetsTable() {
+  const filter = (document.getElementById('filter-cabinets').value || '').toLowerCase().trim();
+  const offreFilter = document.getElementById('filter-offre').value;
+  let list = [...CABINETS].sort((a,b) => (a.Title||'').localeCompare(b.Title||''));
+  if (offreFilter) list = list.filter(c => c.OFFRE === offreFilter);
+  if (filter) {
+    list = list.filter(c => {
+      const blob = [c.Title, c.SIRET, c.Adresse, c.OFFRE].map(x => (x||'').toString().toLowerCase()).join(' ');
+      return blob.includes(filter);
+    });
+  }
+  const base = location.origin + location.pathname.replace(/index\\.html$/, '');
+  const tbody = document.getElementById('cabinets-tbody');
+  tbody.innerHTML = list.map(c => {
+    const url = `${base}?c=${c.Id}&t=${c._token}`;
+    const offreClass = c.OFFRE && c.OFFRE.replace(/[^A-Z0-9]/gi, '');
+    return `<tr>
+      <td class="name">${escapeHtml(c.Title || '(sans nom)')}</td>
+      <td>${c.OFFRE ? `<span class="offre-tag ${escapeHtml(offreClass)}">${escapeHtml(c.OFFRE)}</span>` : '<span style="color:var(--gray-500); font-size:11px;">—</span>'}</td>
+      <td><div class="url-cell" title="${escapeHtml(url)}">${escapeHtml(url)}</div></td>
+      <td class="actions-cell">
+        <button class="btn-mini btn-copy" onclick="copyUrl(this, '${escapeHtml(url)}')">📋 Copier</button>
+        <button class="btn-mini" onclick="window.open('${escapeHtml(url)}','_blank')">↗ Ouvrir</button>
+      </td>
+    </tr>`;
+  }).join('');
+  if (!list.length) tbody.innerHTML = '<tr><td colspan="4" style="padding: 32px; text-align: center; color: var(--gray-500);">Aucun cabinet ne correspond.</td></tr>';
+}
+
+function copyUrl(btn, url) {
+  navigator.clipboard.writeText(url).then(() => {
+    btn.classList.add('copied');
+    btn.textContent = '✓ Copié';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '📋 Copier'; }, 1600);
+  });
+}
+
+function copyAllLinks() {
+  const base = location.origin + location.pathname.replace(/index\\.html$/, '');
+  const lines = [...CABINETS].sort((a,b) => (a.Title||'').localeCompare(b.Title||''))
+    .map(c => `${c.Title || '(sans nom)'}\\t${base}?c=${c.Id}&t=${c._token}`);
+  navigator.clipboard.writeText(lines.join('\\n')).then(() => toast(`${lines.length} liens copiés`, true));
+}
+
+function exportLinksCsv() {
+  const base = location.origin + location.pathname.replace(/index\\.html$/, '');
+  const rows = [['Cabinet', 'Id', 'Offre', 'URL']];
+  for (const c of [...CABINETS].sort((a,b) => (a.Title||'').localeCompare(b.Title||''))) {
+    rows.push([c.Title || '(sans nom)', c.Id, c.OFFRE || '', `${base}?c=${c.Id}&t=${c._token}`]);
+  }
+  const csv = rows.map(r => r.map(c => {
+    const s = c == null ? '' : c.toString();
+    return /[";\\n,]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(';')).join('\\n');
+  const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'liens_cabinets.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exporté', true);
+}
+
+// === Schema editor ===
+function renderSchemaEditor() {
+  const list = document.getElementById('schema-fields-list');
+  list.innerHTML = SCHEMA.map((s, idx) => renderSchemaCard(s, idx)).join('');
+  bindSchemaInteractions();
+}
+
+function renderSchemaCard(s, idx) {
+  const hiddenClass = s._hidden ? 'hidden-field' : '';
+  const isMulti = s.type === 'multichoice';
+  const isChoice = s.type === 'choice' || s.type === 'multichoice';
+  return `<div class="schema-field-card ${hiddenClass}" data-idx="${idx}">
+    <div class="schema-field-head">
+      <span class="drag-handle" title="Glisser pour réordonner">⋮⋮</span>
+      <input type="text" class="schema-label-input" value="${escapeHtml(s.label)}" data-idx="${idx}" data-prop="label">
+      <span class="type-badge">${escapeHtml(s.type)}</span>
+      <span class="internal-name">${escapeHtml(s.internal)}</span>
+      <button class="btn-icon" onclick="moveField(${idx}, -1)" title="Monter">▲</button>
+      <button class="btn-icon" onclick="moveField(${idx}, 1)" title="Descendre">▼</button>
+      <button class="btn-icon" onclick="toggleHide(${idx})" title="Masquer/Afficher">${s._hidden ? '👁' : '🙈'}</button>
+      <button class="btn-icon btn-del" onclick="deleteFieldFromSchema(${idx})" title="Supprimer">🗑</button>
+    </div>
+    ${isMulti ? `<div class="schema-field-body">
+      <div class="body-row">
+        <label>"Pas de X"</label>
+        <input type="text" value="${escapeHtml(s.noneLabel || '')}" data-idx="${idx}" data-prop="noneLabel" placeholder="ex. Pas de compta">
+      </div>
+    </div>` : ''}
+    ${isChoice ? `<div class="schema-field-body">
+      <div class="body-row" style="align-items:flex-start;">
+        <label>Options</label>
+        <div class="schema-choices" data-idx="${idx}">
+          ${(s.options || []).map((o, oi) => `<span class="choice-chip">${escapeHtml(o)}<button class="del-choice" onclick="deleteChoice(${idx}, ${oi})">×</button></span>`).join('')}
+          <input class="add-choice-input" placeholder="+ Ajouter option" data-idx="${idx}">
+        </div>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+function bindSchemaInteractions() {
+  document.querySelectorAll('.schema-label-input, .schema-field-body input[type=text]').forEach(inp => {
+    if (inp.classList.contains('add-choice-input')) return;
+    inp.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      const prop = e.target.dataset.prop;
+      if (!isNaN(idx) && prop) {
+        SCHEMA[idx][prop] = e.target.value;
+        showUnsaved();
+      }
+    });
+  });
+  document.querySelectorAll('.add-choice-input').forEach(inp => {
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.value.trim()) {
+        e.preventDefault();
+        const idx = parseInt(e.target.dataset.idx);
+        if (!SCHEMA[idx].options) SCHEMA[idx].options = [];
+        SCHEMA[idx].options.push(e.target.value.trim());
+        e.target.value = '';
+        renderSchemaEditor();
+        showUnsaved();
+      }
+    });
+  });
+}
+
+function deleteChoice(fieldIdx, choiceIdx) {
+  SCHEMA[fieldIdx].options.splice(choiceIdx, 1);
+  renderSchemaEditor();
+  showUnsaved();
+}
+
+function moveField(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= SCHEMA.length) return;
+  [SCHEMA[idx], SCHEMA[newIdx]] = [SCHEMA[newIdx], SCHEMA[idx]];
+  renderSchemaEditor();
+  showUnsaved();
+}
+
+function toggleHide(idx) {
+  SCHEMA[idx]._hidden = !SCHEMA[idx]._hidden;
+  renderSchemaEditor();
+  showUnsaved();
+}
+
+function deleteFieldFromSchema(idx) {
+  if (!confirm(`Supprimer le champ "${SCHEMA[idx].label}" du formulaire ?`)) return;
+  SCHEMA.splice(idx, 1);
+  renderSchemaEditor();
+  showUnsaved();
+}
+
+function showUnsaved() {
+  document.getElementById('schema-save-msg').innerHTML = '⚠️ <span style="color:var(--warning-dark);">Modifications non sauvegardées</span>';
+}
+
+function saveSchema() {
+  // Filter out hidden fields if user wants — actually keep them as-is with _hidden flag
+  localStorage.setItem('labosphere_schema_v2', JSON.stringify(SCHEMA));
+  document.getElementById('schema-save-msg').innerHTML = '✓ <span style="color:var(--success-dark);">Sauvegardé en local</span>';
+  toast('Schéma sauvegardé localement', true);
+  setTimeout(() => { document.getElementById('schema-save-msg').innerHTML = ''; }, 4000);
+}
+
+function downloadSchema() {
+  const blob = new Blob([JSON.stringify(SCHEMA, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'labosphere_schema.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Schéma téléchargé', true);
+}
+
+// === Preview tab : reuse the existing search/form ===
+function setupPreviewSearch() {
+  const inp = document.getElementById('cabinet-input-preview');
+  const box = document.getElementById('cabinet-suggestions-preview');
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim();
+    if (!q) { box.classList.remove('show'); return; }
+    const results = searchCabinets(q);
+    if (!results.length) {
+      box.innerHTML = `<div class="no-match"><strong>Aucun cabinet trouvé pour "${escapeHtml(q)}"</strong></div>`;
+      box.classList.add('show'); return;
+    }
+    let html = '';
+    if (results[0].score < 65) {
+      html += `<div class="did-you-mean">🤔 Vouliez-vous dire : <strong>${escapeHtml(results[0].cabinet.Title)}</strong> ?</div>`;
+    }
+    for (const r of results) {
+      const c = r.cabinet;
+      const offre = c.OFFRE ? `<span class="label-tag">${escapeHtml(c.OFFRE)}</span>` : '';
+      html += `<div class="suggestion" onclick="adminSelectCabinet(${c.Id})">${escapeHtml(c.Title)}${offre}</div>`;
+    }
+    box.innerHTML = html; box.classList.add('show');
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#preview-cabinet-section')) box.classList.remove('show');
+  });
+}
+
+function adminSelectCabinet(id) {
+  document.querySelector('.card').style.display = 'block';
+  document.getElementById('cabinet-section').style.display = 'none';
+  selectCabinet(id);
+  // Keep admin panel visible above
+  document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function toast(msg, success) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.className = 'show' + (success ? ' success' : '');
+  setTimeout(() => { t.className = ''; }, 2400);
 }
 
 tryAutoLoad();
