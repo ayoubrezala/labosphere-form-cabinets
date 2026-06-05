@@ -44,7 +44,8 @@ body {
   font-feature-settings: "cv11", "ss01";
   min-height: 100vh;
 }
-.container { max-width: 880px; margin: 0 auto; }
+.container { max-width: 880px; margin: 0 auto; transition: max-width 0.3s; }
+body.is-admin .container { max-width: 1400px; }
 
 /* Header */
 .header {
@@ -1786,6 +1787,7 @@ function showInvalidLink() {
 
 function tryAutoLoad() {
   if (IS_ADMIN) {
+    document.body.classList.add('is-admin');
     document.getElementById('admin-panel').classList.add('show');
     document.querySelector('.card').style.display = 'none';
     initAdmin();
