@@ -8,13 +8,27 @@
 // Cabinets sans email sont skippés (rapportés dans la réponse).
 
 import crypto from 'crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'labosphere-3.0-token-salt-2026';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'c.brien@label-co-pilotes.com';
 const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'Cyndie BRIEN';
 const FORM_URL_BASE = process.env.FORM_URL_BASE || 'https://labosphere-form-cabinets.vercel.app';
-const SIGNATURE_URL = `${FORM_URL_BASE}/assets/signature-cyndie.png`;
+
+// Load signature once and embed as inline attachment with CID
+let SIGNATURE_BASE64 = null;
+function loadSignature() {
+  if (SIGNATURE_BASE64) return SIGNATURE_BASE64;
+  try {
+    const p = path.join(process.cwd(), 'assets', 'signature-cyndie.png');
+    SIGNATURE_BASE64 = fs.readFileSync(p).toString('base64');
+  } catch (e) {
+    SIGNATURE_BASE64 = '';
+  }
+  return SIGNATURE_BASE64;
+}
 
 const REPO = process.env.GH_REPO || 'ayoubrezala/labosphere-form-cabinets';
 const GRAPH_SITE_ID = process.env.GRAPH_SITE_ID
@@ -91,7 +105,7 @@ function buildHtml(cabinet, link) {
     <p><strong>Merci de compléter ce formulaire au plus tard le 19 juin.</strong></p>
     <p>Bonne journée,<br>Bien cordialement,</p>
     <div style="margin-top:24px;">
-      <img src="${SIGNATURE_URL}" alt="Cyndie BRIEN - Label Co-Pilotes" style="display:block;max-width:600px;width:100%;height:auto;" />
+      <img src="cid:signature-cyndie.png" alt="Cyndie BRIEN - Label Co-Pilotes" style="display:block;max-width:600px;width:100%;height:auto;border:0;" />
     </div>
   </div>
 </body>
@@ -107,6 +121,17 @@ async function sendOne(cabinet) {
   const link = `${FORM_URL_BASE}/?c=${cabinet.id}&t=${token}`;
   const html = buildHtml(cabinet, link);
 
+  const sig = loadSignature();
+  const payload = {
+    sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+    to: tos.map(email => ({ email })),
+    subject: `${cabinet.title} — Mise à jour de vos informations pour le trombinoscope Cabinets`,
+    htmlContent: html,
+    tags: ['labosphere-form', `cabinet-${cabinet.id}`]
+  };
+  if (sig) {
+    payload.attachment = [{ name: 'signature-cyndie.png', content: sig }];
+  }
   const r = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -114,13 +139,7 @@ async function sendOne(cabinet) {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
-    body: JSON.stringify({
-      sender: { name: SENDER_NAME, email: SENDER_EMAIL },
-      to: tos.map(email => ({ email })),
-      subject: `${cabinet.title} — Mise à jour de vos informations pour le trombinoscope Cabinets`,
-      htmlContent: html,
-      tags: ['labosphere-form', `cabinet-${cabinet.id}`]
-    })
+    body: JSON.stringify(payload)
   });
   if (!r.ok) {
     const txt = await r.text();
