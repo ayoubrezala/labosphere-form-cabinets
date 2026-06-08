@@ -1203,7 +1203,7 @@ body.is-admin .container { max-width: 1400px; }
           💡 Cliquez sur <strong>Confirmer</strong> si l'info est correcte ou <strong>Modifier</strong> pour la changer. Tous les champs doivent être validés.
         </div>
         <button class="btn-primary" id="btn-submit" onclick="submitForm()" disabled>
-          📥 Valider & télécharger CSV
+          ✅ Valider
         </button>
       </div>
     </div>
@@ -1211,8 +1211,7 @@ body.is-admin .container { max-width: 1400px; }
     <div id="success-msg">
       <div class="check">✓</div>
       <h3>Merci !</h3>
-      <p>Votre saisie a bien été enregistrée et le fichier CSV téléchargé.<br>Veuillez l'envoyer à l'administrateur Labosphère par mail.</p>
-      <button class="btn-primary" onclick="resetForm()">Faire une autre saisie</button>
+      <p>Votre saisie a bien été enregistrée auprès de l'équipe Labosphère.</p>
     </div>
   </div>
   
@@ -1660,10 +1659,7 @@ async function submitForm() {
   btn.disabled = true;
   btn.textContent = '⏳ Envoi en cours…';
 
-  // Always download CSV as backup
-  downloadCsv(data);
-
-  // Send to backend for tracking (best-effort, doesn't block UI)
+  // Send to backend
   const payload = {
     cabinetId: selectedCabinet.Id,
     cabinetTitle: selectedCabinet.Title,
@@ -1684,15 +1680,17 @@ async function submitForm() {
     serverOk = false;
   }
 
+  if (!serverOk) {
+    // Re-enable submit and show error
+    btn.disabled = false;
+    btn.innerHTML = '✅ Valider';
+    alert("⚠️ Erreur d'envoi. Vérifiez votre connexion et réessayez. Si le problème persiste, contactez l'administrateur Labosphère.");
+    return;
+  }
+
   document.getElementById('form-section').style.display = 'none';
   document.getElementById('progress-wrap').classList.remove('show');
-  const sm = document.getElementById('success-msg');
-  if (!serverOk) {
-    sm.querySelector('p').innerHTML = '⚠️ Votre réponse n\'a pas pu être envoyée automatiquement à l\'administrateur — mais le CSV est téléchargé. <br>Merci de l\'envoyer par mail à l\'administrateur Labosphère.';
-  }
-  sm.style.display = 'block';
-  btn.disabled = false;
-  btn.innerHTML = '📥 Valider & télécharger CSV';
+  document.getElementById('success-msg').style.display = 'block';
 }
 
 function downloadCsv(data) {
