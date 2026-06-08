@@ -1820,8 +1820,50 @@ function initAdmin() {
   renderCabinetsTable();
   renderSchemaEditor();
   setupPreviewSearch();
+  renderAdminAuthBanner();
   // Pre-load count if already authed
   if (getAdminSecret()) refreshResponses();
+  // Auto-refresh submissions every 30s while admin tab is open
+  startAutoRefresh();
+}
+
+let AUTO_REFRESH_TIMER = null;
+function startAutoRefresh() {
+  if (AUTO_REFRESH_TIMER) clearInterval(AUTO_REFRESH_TIMER);
+  AUTO_REFRESH_TIMER = setInterval(() => {
+    if (!getAdminSecret()) return;
+    if (document.hidden) return;
+    refreshResponses();
+  }, 30000);
+}
+
+function renderAdminAuthBanner() {
+  let bn = document.getElementById('admin-auth-banner');
+  if (!bn) {
+    bn = document.createElement('div');
+    bn.id = 'admin-auth-banner';
+    bn.style.cssText = 'display:none;background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;color:#92400e;padding:14px 22px;border-radius:var(--radius-md);margin-bottom:18px;font-weight:600;font-size:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;';
+    bn.innerHTML = `
+      <span style="font-size:24px;">🔑</span>
+      <div style="flex:1;min-width:200px;">
+        <div style="font-weight:800;margin-bottom:2px;">Vous n'êtes pas connecté</div>
+        <div style="font-weight:500;font-size:12px;opacity:0.9;">Entrez la clé admin pour voir les statuts des soumissions et les réponses reçues.</div>
+      </div>
+      <input id="banner-secret-input" type="password" placeholder="Clé admin…" style="padding:9px 13px;border:1.5px solid #f59e0b;border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:240px;">
+      <button onclick="loginFromBanner()" class="btn-action-admin" style="background:#f59e0b;">Se connecter</button>
+    `;
+    const tabCabinets = document.getElementById('tab-cabinets');
+    tabCabinets.insertBefore(bn, tabCabinets.firstChild);
+  }
+  bn.style.display = getAdminSecret() ? 'none' : 'flex';
+}
+
+async function loginFromBanner() {
+  const secret = document.getElementById('banner-secret-input').value.trim();
+  if (!secret) return;
+  localStorage.setItem('labosphere_admin_secret', secret);
+  await refreshResponses();
+  renderAdminAuthBanner();
 }
 
 function switchTab(name) {
@@ -1854,15 +1896,6 @@ function renderDashboardStats() {
 function renderCabinetsTable() {
   const filter = (document.getElementById('filter-cabinets').value || '').toLowerCase().trim();
   const offreFilter = document.getElementById('filter-offre').value;
-  let list = [...CABINETS].sort((a,b) => (a.Title||'').localeCompare(b.Title||''));
-  if (offreFilter) list = list.filter(c => c.OFFRE === offreFilter);
-  if (filter) {
-    list = list.filter(c => {
-      const blob = [c.Title, c.Adresse, c.OFFRE, c.Pr_x00e9_nomdur_x00e9_f_x00e9_re, c.Adressemailr_x00e9_f_x00e9_rent].map(x => (x||'').toString().toLowerCase()).join(' ');
-      return blob.includes(filter);
-    });
-  }
-  const base = location.origin + location.pathname.replace(/index\.html$/, '');
 
   // Build a lookup of latest submission per cabinet (from SUBMISSIONS cache)
   const subByCabinet = {};
@@ -1872,6 +1905,33 @@ function renderCabinetsTable() {
       if (!cur || new Date(s.submittedAt) > new Date(cur.submittedAt)) subByCabinet[s.cabinetId] = s;
     }
   }
+
+  // Sort: filled first (most recent first), then alphabetical for unfilled
+  function sortKey(c) {
+    const sub = subByCabinet[c.Id];
+    if (sub) {
+      // Validated last among filled, otherwise by submittedAt desc
+      const stateRank = sub.state === 'closed' ? 1 : 0;
+      return [0, stateRank, -(new Date(sub.submittedAt).getTime()), c.Title || ''];
+    }
+    return [1, 0, 0, (c.Title || '').toLowerCase()];
+  }
+  let list = [...CABINETS].sort((a, b) => {
+    const A = sortKey(a), B = sortKey(b);
+    for (let i = 0; i < A.length; i++) {
+      if (A[i] < B[i]) return -1;
+      if (A[i] > B[i]) return 1;
+    }
+    return 0;
+  });
+  if (offreFilter) list = list.filter(c => c.OFFRE === offreFilter);
+  if (filter) {
+    list = list.filter(c => {
+      const blob = [c.Title, c.Adresse, c.OFFRE, c.Pr_x00e9_nomdur_x00e9_f_x00e9_re, c.Adressemailr_x00e9_f_x00e9_rent].map(x => (x||'').toString().toLowerCase()).join(' ');
+      return blob.includes(filter);
+    });
+  }
+  const base = location.origin + location.pathname.replace(/index\.html$/, '');
 
   const tbody = document.getElementById('cabinets-tbody');
   tbody.innerHTML = list.map(c => {
@@ -2262,6 +2322,7 @@ async function refreshResponses() {
       return;
     }
     const j = await r.json();
+    const previousCount = (SUBMISSIONS || []).length;
     SUBMISSIONS = j.submissions || [];
     document.getElementById('responses-auth').style.display = 'none';
     document.getElementById('responses-loaded').style.display = '';
@@ -2269,9 +2330,15 @@ async function refreshResponses() {
     renderResponses();
     // Also re-render cabinets table so the Status column reflects latest data
     if (typeof renderCabinetsTable === 'function') renderCabinetsTable();
+    if (typeof renderAdminAuthBanner === 'function') renderAdminAuthBanner();
     const c = document.getElementById('responses-count');
     c.textContent = SUBMISSIONS.length;
     c.style.display = SUBMISSIONS.length ? '' : 'none';
+    // Notify if new submissions arrived
+    if (previousCount > 0 && SUBMISSIONS.length > previousCount) {
+      const delta = SUBMISSIONS.length - previousCount;
+      toast(`🔔 ${delta} nouvelle${delta > 1 ? 's' : ''} soumission${delta > 1 ? 's' : ''} reçue${delta > 1 ? 's' : ''}`, true);
+    }
   } catch (e) {
     toast('Erreur réseau', false);
   }
