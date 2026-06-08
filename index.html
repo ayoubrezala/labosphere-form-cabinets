@@ -1106,6 +1106,7 @@ body.is-admin .container { max-width: 1400px; }
         </select>
         <button class="btn-action-admin" onclick="exportLinksCsv()">📥 Exporter CSV des liens</button>
         <button class="btn-action-admin" onclick="copyAllLinks()">📋 Copier tous les liens</button>
+        <button class="btn-action-admin" id="btnSendAll" onclick="sendFormToAll()" style="background:#d44a3a;color:#fff;border-color:#d44a3a;">📧 Envoyer à tous</button>
       </div>
       <div class="cabinets-table-wrap">
         <table class="cabinets-table">
@@ -1987,32 +1988,78 @@ function copyUrl(btn, url) {
   });
 }
 
-// === Send form by email (mailto) ===
-function sendFormByEmail(cabinetId) {
+// === Send form by email (Brevo backend) ===
+async function sendFormByEmail(cabinetId) {
   const c = CABINETS.find(x => x.Id === cabinetId);
-  if (!c || !c.Adressemailr_x00e9_f_x00e9_rent) return;
-  const base = location.origin + location.pathname.replace(/index\.html$/, '');
-  const url = `${base}?c=${c.Id}&t=${c._token}`;
-  const referentName = (c.Pr_x00e9_nomdur_x00e9_f_x00e9_re || '').split(/[, ]+/)[0] || '';
-  const subject = `[Labosphère 3.0] Mise à jour des informations du cabinet ${c.Title}`;
-  const body = `Bonjour ${referentName},
+  if (!c) return;
+  if (!c.Adressemailr_x00e9_f_x00e9_rent) {
+    toast(`Aucune adresse email pour ${c.Title}`, false);
+    return;
+  }
+  const btn = document.querySelector(`tr[data-cabinet-row="${cabinetId}"] .btn-send`);
+  const origText = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+  try {
+    const secret = ensureAdminSecret();
+    if (!secret) return;
+    const r = await fetch('/api/send-mail', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cabinetIds: [cabinetId] })
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Erreur envoi');
+    const item = (j.results || [])[0];
+    if (item?.messageId) {
+      toast(`✓ Email envoyé à ${item.recipients.join(', ')}`, true);
+    } else if (item?.skipped) {
+      toast(`Skippé : ${item.skipped}`, false);
+    } else if (item?.error) {
+      toast(`Erreur : ${item.error}`, false);
+    }
+  } catch (e) {
+    toast('Erreur envoi : ' + e.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+  }
+}
 
-Dans le cadre de la mise à jour annuelle des données Labosphère 3.0, je vous remercie de bien vouloir vérifier et actualiser les informations de votre cabinet « ${c.Title} ».
-
-Le formulaire est accessible via ce lien personnalisé :
-${url}
-
-Pour chaque champ, vous pourrez :
-  • Confirmer la donnée actuelle si elle est correcte
-  • La modifier si elle ne l'est pas
-  • Si une rubrique ne s'applique pas, sélectionner "Pas de…" ou "Autre"
-
-Le formulaire prend environ 10 minutes. Tous les champs sont obligatoires.
-
-Merci par avance,
-L'équipe Labosphère 3.0`;
-  const link = `mailto:${encodeURIComponent(c.Adressemailr_x00e9_f_x00e9_rent)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.location.href = link;
+// === Bulk send to all cabinets ===
+async function sendFormToAll() {
+  const withEmail = CABINETS.filter(c => c.Adressemailr_x00e9_f_x00e9_rent);
+  const withoutEmail = CABINETS.filter(c => !c.Adressemailr_x00e9_f_x00e9_rent);
+  const confirm1 = window.confirm(
+    `Envoyer le formulaire à ${withEmail.length} cabinets ?\n\n` +
+    (withoutEmail.length ? `(${withoutEmail.length} cabinets seront skippés faute d'email)\n\n` : '') +
+    'Cette action est irréversible.'
+  );
+  if (!confirm1) return;
+  const btn = document.getElementById('btnSendAll');
+  const origText = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi en cours…'; }
+  try {
+    const secret = ensureAdminSecret();
+    if (!secret) return;
+    const r = await fetch('/api/send-mail', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Erreur envoi');
+    const s = j.summary;
+    const msg = `Envoyés : ${s.sent} · Skippés : ${s.skipped} · Échoués : ${s.failed} / ${s.total}`;
+    toast(msg, s.failed === 0);
+    if (s.failed > 0) {
+      const fails = (j.results || []).filter(r => r.error);
+      console.error('Send failures:', fails);
+      alert('Erreurs détaillées :\n\n' + fails.slice(0, 10).map(f => `${f.title}: ${f.error}`).join('\n'));
+    }
+  } catch (e) {
+    toast('Erreur envoi : ' + e.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+  }
 }
 
 // === Validation modal ===
@@ -2282,6 +2329,15 @@ let SUBMISSIONS = null; // cached fetched submissions
 
 function getAdminSecret() {
   return localStorage.getItem('labosphere_admin_secret') || '';
+}
+
+function ensureAdminSecret() {
+  let s = getAdminSecret();
+  if (s) return s;
+  s = window.prompt('Clé admin requise pour cette action :');
+  if (!s) return '';
+  localStorage.setItem('labosphere_admin_secret', s.trim());
+  return s.trim();
 }
 
 async function loginAdminResponses() {
