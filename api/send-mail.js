@@ -1,10 +1,10 @@
 // POST /api/send-mail
 // Header: Authorization: Bearer <ADMIN_SECRET>
-// Body: { cabinetIds?: number[] }   // omit or [] = send to ALL cabinets
+// Body: { cabinets: [{ id, title, email, referent }, ...] }
 //
 // Envoie un email personnalisé à chaque cabinet via Brevo API v3, avec :
-//  - lien formulaire unique (token déterministe)
-//  - signature image Cyndie BRIEN (hébergée sur le déploiement Vercel)
+//  - lien formulaire unique (token déterministe basé sur id+title)
+//  - signature image Cyndie BRIEN embarquée inline (CID attachment)
 // Cabinets sans email sont skippés (rapportés dans la réponse).
 
 import crypto from 'crypto';
@@ -30,53 +30,10 @@ function loadSignature() {
   return SIGNATURE_BASE64;
 }
 
-const REPO = process.env.GH_REPO || 'ayoubrezala/labosphere-form-cabinets';
-const GRAPH_SITE_ID = process.env.GRAPH_SITE_ID
-  || 'labelcopilotes.sharepoint.com,f7dcb637-5a00-45f3-bfe7-35d64898817b,074deece-cf07-4a81-806f-5d91b14a10ee';
-const GRAPH_LIST_ID = process.env.GRAPH_LIST_ID
-  || '0a85d98e-641d-48d8-90c5-3ba16ffbb6bb';
-const TENANT_ID = process.env.MS_TENANT_ID;
-const CLIENT_ID = process.env.MS_CLIENT_ID;
-const CLIENT_SECRET = process.env.MS_CLIENT_SECRET;
 
 function expectedToken(cabinetId, cabinetTitle) {
   const payload = `${TOKEN_SECRET}|${cabinetId}|${(cabinetTitle || '').toLowerCase().trim()}`;
   return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 10);
-}
-
-async function getGraphToken() {
-  const body = new URLSearchParams({
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    scope: 'https://graph.microsoft.com/.default',
-    grant_type: 'client_credentials',
-  });
-  const r = await fetch(`https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body
-  });
-  if (!r.ok) throw new Error(`graph token http ${r.status}`);
-  return (await r.json()).access_token;
-}
-
-async function listCabinets(token) {
-  // Pull all items with their reference fields
-  let url = `https://graph.microsoft.com/v1.0/sites/${GRAPH_SITE_ID}/lists/${GRAPH_LIST_ID}/items?$top=100&$expand=fields($select=Title,Adresse_x0020_mail_x0020_r_x00e9,Pr_x00e9_nom_x0020_et_x0020_Nom_)`;
-  const items = [];
-  while (url) {
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!r.ok) throw new Error(`graph list http ${r.status}`);
-    const j = await r.json();
-    items.push(...(j.value || []));
-    url = j['@odata.nextLink'] || null;
-  }
-  return items.map(it => ({
-    id: parseInt(it.id, 10),
-    title: (it.fields && it.fields.Title) || '',
-    email: (it.fields && it.fields.Adresse_x0020_mail_x0020_r_x00e9) || '',
-    referent: (it.fields && it.fields.Pr_x00e9_nom_x0020_et_x0020_Nom_) || '',
-  }));
 }
 
 function splitEmails(raw) {
@@ -162,24 +119,18 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   if (!BREVO_API_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' });
-  if (!TENANT_ID || !CLIENT_ID || !CLIENT_SECRET) return res.status(500).json({ error: 'MS_* missing' });
 
   let payload;
   try { payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; }
   catch { return res.status(400).json({ error: 'Invalid JSON' }); }
-  const { cabinetIds } = payload || {};
-  const filterIds = Array.isArray(cabinetIds) && cabinetIds.length ? new Set(cabinetIds.map(Number)) : null;
-
-  let cabinets;
-  try {
-    const t = await getGraphToken();
-    cabinets = await listCabinets(t);
-  } catch (e) {
-    return res.status(502).json({ error: 'Cabinets list fetch failed', details: e.message });
+  const { cabinets } = payload || {};
+  if (!Array.isArray(cabinets) || cabinets.length === 0) {
+    return res.status(400).json({ error: 'Missing cabinets array' });
   }
 
-  let targets = cabinets.filter(c => c.title);
-  if (filterIds) targets = targets.filter(c => filterIds.has(c.id));
+  const targets = cabinets
+    .filter(c => c && c.id != null && c.title)
+    .map(c => ({ id: Number(c.id), title: c.title, email: c.email || '', referent: c.referent || '' }));
 
   // Send sequentially to keep within Vercel function time + Brevo rate-limit friendly
   const results = [];

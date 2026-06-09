@@ -1988,6 +1988,15 @@ function copyUrl(btn, url) {
   });
 }
 
+function cabinetToPayload(c) {
+  return {
+    id: c.Id,
+    title: c.Title || '',
+    email: c.Adressemailr_x00e9_f_x00e9_rent || '',
+    referent: c.Pr_x00e9_nomdur_x00e9_f_x00e9_re || ''
+  };
+}
+
 // === Send form by email (Brevo backend) ===
 async function sendFormByEmail(cabinetId) {
   const c = CABINETS.find(x => x.Id === cabinetId);
@@ -2005,7 +2014,7 @@ async function sendFormByEmail(cabinetId) {
     const r = await fetch('/api/send-mail', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cabinetIds: [cabinetId] })
+      body: JSON.stringify({ cabinets: [cabinetToPayload(c)] })
     });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'Erreur envoi');
@@ -2043,7 +2052,7 @@ async function sendFormToAll() {
     const r = await fetch('/api/send-mail', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify({ cabinets: withEmail.map(cabinetToPayload) })
     });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'Erreur envoi');
