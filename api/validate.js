@@ -42,7 +42,7 @@ const FIELD_MAP = {
   Outils_x0020_client_x0020_et_x00: { name: 'Outils_x0020_clients_x0020_Emiss', type: 'multi'  },
   Outils_x0020_client_x0020_r_x00e: { name: 'Outils_x0020_clients_x0020_R_x00', type: 'multi'  },
   Certification:                    { name: 'Certifications',                   type: 'multi'  },
-  Sp_x00e9_cialit_x00e9__x0020_de_: { name: 'Sp_x00e9_cialit_x00e9__x0028_s_x', type: 'multi'  },
+  Sp_x00e9_cialit_x00e9__x0020_de_: { name: 'Sp_x00e9_cialit_x00e9__x0028_s_x', type: 'text-to-multi'  },
 };
 
 async function getGraphToken() {
@@ -93,6 +93,10 @@ function buildPatchBody(data, fieldStates) {
       const arr = Array.isArray(v) ? v.filter(x => x != null && x !== '') : [];
       out[`${m.name}@odata.type`] = '#Collection(Edm.String)';
       out[m.name] = arr;
+    } else if (m.type === 'text-to-multi') {
+      const s = (v === undefined || v === null) ? '' : String(v).trim();
+      out[`${m.name}@odata.type`] = '#Collection(Edm.String)';
+      out[m.name] = s ? [s] : [];
     } else {
       out[m.name] = (v === undefined || v === null) ? null : String(v);
     }
