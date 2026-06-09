@@ -1344,9 +1344,10 @@ function renderForm() {
   fieldStates = {};
   
   const fields = SCHEMA.filter(s => s.internal !== 'Title');
+  const inOutilsSection = s => s.type === 'multichoice' || s.internal === 'Sp_x00e9_cialit_x00e9__x0020_de_';
   const groups = {
-    'Informations générales': fields.filter(s => s.type !== 'multichoice'),
-    'Outils & spécialités du cabinet': fields.filter(s => s.type === 'multichoice')
+    'Informations générales': fields.filter(s => !inOutilsSection(s)),
+    'Outils & spécialités du cabinet': fields.filter(inOutilsSection)
   };
   
   let html = '';
