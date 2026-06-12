@@ -94,7 +94,7 @@ function buildPatchBody(data, fieldStates) {
       // common separators (", "/" et "/"&"), trim, uppercase each piece.
       // Existing predefined options are kept as-is.
       const splitOther = txt => txt
-        .split(/\s*(?:,|\bet\b|&)\s*/i)
+        .split(/\s*(?:,|\bet\b|&|\+)\s*/i)
         .map(s => s.trim())
         .filter(Boolean)
         .map(s => s.toUpperCase());
