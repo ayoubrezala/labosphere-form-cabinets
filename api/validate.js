@@ -90,17 +90,32 @@ function buildPatchBody(data, fieldStates) {
       if (Number.isNaN(v)) continue;
       out[m.name] = v;
     } else if (m.type === 'multi') {
-      // Strip the form's "__OTHER__:" prefix used to mark free-text custom entries.
-      // "__OTHER__:Mon outil" → "Mon outil"; "__OTHER__:" (no text) → dropped.
+      // For "Autre" entries (prefix "__OTHER__:"): strip the marker, split on
+      // common separators (", "/" et "/"&"), trim, uppercase each piece.
+      // Existing predefined options are kept as-is.
+      const splitOther = txt => txt
+        .split(/\s*(?:,|\bet\b|&)\s*/i)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => s.toUpperCase());
       const arr = Array.isArray(v) ? v
-        .map(x => {
-          if (typeof x !== 'string') return x;
-          if (!x.startsWith('__OTHER__:')) return x;
-          return x.slice(10).trim();
+        .flatMap(x => {
+          if (typeof x !== 'string') return [x];
+          if (!x.startsWith('__OTHER__:')) return [x];
+          const t = x.slice(10).trim();
+          return t ? splitOther(t) : [];
         })
         .filter(x => x != null && x !== '') : [];
+      // Deduplicate while preserving order
+      const seen = new Set();
+      const dedup = arr.filter(x => {
+        const k = typeof x === 'string' ? x : String(x);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
       out[`${m.name}@odata.type`] = '#Collection(Edm.String)';
-      out[m.name] = arr;
+      out[m.name] = dedup;
     } else if (m.type === 'text-to-multi') {
       const s = (v === undefined || v === null) ? '' : String(v).trim();
       out[`${m.name}@odata.type`] = '#Collection(Edm.String)';
