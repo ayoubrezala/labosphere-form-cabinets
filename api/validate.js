@@ -90,7 +90,15 @@ function buildPatchBody(data, fieldStates) {
       if (Number.isNaN(v)) continue;
       out[m.name] = v;
     } else if (m.type === 'multi') {
-      const arr = Array.isArray(v) ? v.filter(x => x != null && x !== '') : [];
+      // Strip the form's "__OTHER__:" prefix used to mark free-text custom entries.
+      // "__OTHER__:Mon outil" → "Mon outil"; "__OTHER__:" (no text) → dropped.
+      const arr = Array.isArray(v) ? v
+        .map(x => {
+          if (typeof x !== 'string') return x;
+          if (!x.startsWith('__OTHER__:')) return x;
+          return x.slice(10).trim();
+        })
+        .filter(x => x != null && x !== '') : [];
       out[`${m.name}@odata.type`] = '#Collection(Edm.String)';
       out[m.name] = arr;
     } else if (m.type === 'text-to-multi') {
