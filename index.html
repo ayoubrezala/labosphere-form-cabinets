@@ -445,6 +445,11 @@ body.is-admin .container { max-width: 1400px; }
   border-color: var(--warning);
   color: white;
 }
+.field-actions .btn-action.btn-cancel:hover {
+  border-color: var(--gray-500);
+  color: var(--gray-800);
+  background: var(--gray-100);
+}
 
 /* Edit area */
 .field-edit { display: none; margin-top: 12px; }
@@ -1411,6 +1416,7 @@ function renderField(s) {
       ${display}
       <div class="field-actions">
         <button type="button" class="btn-action btn-confirm" onclick="setFieldState('${s.internal}', 'confirmed')">✓ Confirmer</button>
+        <button type="button" class="btn-action btn-cancel" onclick="setFieldState('${s.internal}', 'pending')" style="display:none;">↩ Annuler la modification</button>
         <button type="button" class="btn-action btn-modify" onclick="setFieldState('${s.internal}', 'modified')">✏ Modifier</button>
       </div>
       <div class="field-edit">${editForm}<div class="err-msg">Ce champ ne peut pas rester vide.</div></div>
@@ -1543,23 +1549,38 @@ function setFieldState(internal, state) {
   fieldStates[internal] = state;
   fieldDiv.classList.remove('pending', 'confirmed', 'modified', 'error');
   fieldDiv.classList.add(state);
-  
+
+  const btnConfirm = fieldDiv.querySelector('.btn-confirm');
+  const btnCancel = fieldDiv.querySelector('.btn-cancel');
+  const btnModify = fieldDiv.querySelector('.btn-modify');
+
+  // Reset visibility + active state
   fieldDiv.querySelectorAll('.btn-action').forEach(b => b.classList.remove('active'));
-  fieldDiv.querySelector(`.btn-${state === 'confirmed' ? 'confirm' : 'modify'}`).classList.add('active');
-  
-  const statusBadge = fieldDiv.querySelector('.field-status');
-  statusBadge.classList.remove('pending', 'confirmed', 'modified');
-  statusBadge.classList.add(state);
-  statusBadge.textContent = state === 'confirmed' ? '✓ Confirmé' : '✏ Modifié';
-  
-  // If modified, focus the input
-  if (state === 'modified') {
+  if (btnConfirm) btnConfirm.style.display = '';
+  if (btnCancel)  btnCancel.style.display  = 'none';
+
+  if (state === 'confirmed') {
+    if (btnConfirm) btnConfirm.classList.add('active');
+  } else if (state === 'modified') {
+    // While modifying, swap Confirmer for the Annuler button to avoid the trap
+    // of clicking Confirmer thinking it saves the modification.
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel)  btnCancel.style.display  = '';
+    if (btnModify)  btnModify.classList.add('active');
     setTimeout(() => {
       const inp = fieldDiv.querySelector('.field-edit input[type=text], .field-edit input[type=number], .field-edit select, .field-edit .ms-control');
       if (inp) inp.focus();
     }, 100);
   }
-  
+  // 'pending' leaves both Confirmer + Modifier visible, none active.
+
+  const statusBadge = fieldDiv.querySelector('.field-status');
+  statusBadge.classList.remove('pending', 'confirmed', 'modified');
+  statusBadge.classList.add(state);
+  statusBadge.textContent = state === 'confirmed'
+    ? '✓ Confirmé'
+    : state === 'modified' ? '✏ Modifié' : 'À vérifier';
+
   updateProgress();
 }
 
