@@ -1111,6 +1111,7 @@ body.is-admin .container { max-width: 1400px; }
         </select>
         <button class="btn-action-admin" onclick="exportLinksCsv()">📥 Exporter CSV des liens</button>
         <button class="btn-action-admin" onclick="copyAllLinks()">📋 Copier tous les liens</button>
+        <button class="btn-action-admin" onclick="syncCabinetsFromSP()">🔄 Sync SharePoint</button>
         <button class="btn-action-admin" id="btnSendAll" onclick="sendFormToAll()" style="background:#d44a3a;color:#fff;border-color:#d44a3a;">📧 Envoyer à tous</button>
       </div>
       <div class="cabinets-table-wrap">
@@ -1822,10 +1823,34 @@ function tryAutoLoad() {
       if (cl) cl.style.display = 'none';
       return;
     }
-    showInvalidLink();
+    // Fallback: cabinet may have been added to SharePoint after the last embed
+    // refresh. Ask the server; server validates the token against SP data.
+    fetchCabinetFromServer(URL_CABINET_ID, URL_TOKEN).then(fetched => {
+      if (fetched) {
+        CABINETS.push(fetched);
+        selectCabinet(fetched.Id);
+        const cl = document.querySelector('.cabinet-info .change-link');
+        if (cl) cl.style.display = 'none';
+      } else {
+        showInvalidLink();
+      }
+    });
     return;
   }
   showInvalidLink();
+}
+
+async function fetchCabinetFromServer(id, token) {
+  try {
+    const r = await fetch('/api/cabinet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: Number(id), token })
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j.cabinet || null;
+  } catch (e) { return null; }
 }
 
 // === ADMIN MODE ===
@@ -1843,9 +1868,59 @@ function initAdmin() {
   setupPreviewSearch();
   renderAdminAuthBanner();
   // Pre-load count if already authed
-  if (getAdminSecret()) refreshResponses();
+  if (getAdminSecret()) {
+    refreshResponses();
+    syncCabinetsFromSP();
+  }
   // Auto-refresh submissions every 30s while admin tab is open
   startAutoRefresh();
+}
+
+async function syncCabinetsFromSP() {
+  const secret = getAdminSecret();
+  if (!secret) return;
+  try {
+    const r = await fetch('/api/cabinets-sync', {
+      headers: { 'Authorization': 'Bearer ' + secret }
+    });
+    if (!r.ok) {
+      console.warn('cabinets-sync failed:', r.status);
+      return;
+    }
+    const j = await r.json();
+    const knownTitles = new Set(CABINETS.map(c => (c.Title || '').trim().toLowerCase()));
+    const added = [];
+    for (const sp of (j.cabinets || [])) {
+      const t = (sp.Title || '').trim().toLowerCase();
+      if (!t || knownTitles.has(t)) continue;
+      // Add new cabinet with minimal data — other fields default to null so
+      // the form shows "— Aucune valeur enregistrée —" for a fresh onboarding
+      const c = { ...sp };
+      added.push(c);
+      CABINETS.push(c);
+      knownTitles.add(t);
+    }
+    if (added.length) {
+      // Rebuild admin UI so the new cabinets show up in the dashboard
+      const offreSelect = document.getElementById('filter-offre');
+      if (offreSelect) {
+        const cur = offreSelect.value;
+        offreSelect.innerHTML = '<option value="">Toutes offres</option>';
+        const offres = [...new Set(CABINETS.map(c => c.OFFRE).filter(Boolean))].sort();
+        for (const o of offres) {
+          const opt = document.createElement('option');
+          opt.value = o; opt.textContent = o;
+          offreSelect.appendChild(opt);
+        }
+        offreSelect.value = cur;
+      }
+      renderDashboardStats();
+      renderCabinetsTable();
+      toast(`+ ${added.length} nouveau${added.length>1?'x':''} cabinet${added.length>1?'s':''} récupéré${added.length>1?'s':''} depuis SharePoint`, true);
+    }
+  } catch (e) {
+    console.warn('syncCabinetsFromSP error:', e);
+  }
 }
 
 let AUTO_REFRESH_TIMER = null;
@@ -2377,6 +2452,7 @@ async function loginAdminResponses() {
   localStorage.setItem('labosphere_admin_secret', secret);
   document.getElementById('admin-secret-input').value = '';
   await refreshResponses();
+  syncCabinetsFromSP();
 }
 
 function logoutAdminResponses() {
