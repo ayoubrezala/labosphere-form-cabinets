@@ -101,6 +101,8 @@ function buildPatchBody(data, fieldStates) {
       const arr = Array.isArray(v) ? v
         .flatMap(x => {
           if (typeof x !== 'string') return [x];
+          // "__NONE__:<label>" = user explicitly said "none" → store empty
+          if (x.startsWith('__NONE__:')) return [];
           if (!x.startsWith('__OTHER__:')) return [x];
           const t = x.slice(10).trim();
           return t ? splitOther(t) : [];
